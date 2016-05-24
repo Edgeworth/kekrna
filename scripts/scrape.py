@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 import glob
 import os
+import random
 import re
 import sqlite3
 import urllib.request
@@ -89,9 +90,26 @@ class ArchiveII:
       else:
         kekvault.add(rna)
 
-# kekvault = KekVault('archiveii')
-# rnastrand_scraper = RNAStrand(open('scripts/rnastrand.data').read())
-# rnastrand_scraper.insert(kekvault)
-#
-# archiveii = ArchiveII('~/software/rna/rnark/RNASets/RNAStructureArchive')
-# archiveii.insert(kekvault)
+class Random:
+  def __init__(self, num):
+    self.num = num
+
+  def insert(self, kekvault):
+    for i in range(1, self.num + 1):
+      seq = ''.join(random.choice('GUAC') for _ in range(i))
+      rna = RNA(name='len_%d' % i, seq=seq, pairs=[-1] * i)
+      kekvault.add(rna)
+
+def main():
+  pass
+  # kekvault = KekVault('random')
+  # r = Random(3000)
+  # r.insert(kekvault)
+  # rnastrand_scraper = RNAStrand(open('scripts/rnastrand.data').read())
+  # rnastrand_scraper.insert(kekvault)
+  #
+  # archiveii = ArchiveII('~/software/rna/rnark/RNASets/RNAStructureArchive')
+  # archiveii.insert(kekvault)
+
+if __name__ == '__main__':
+  main()
