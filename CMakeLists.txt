@@ -19,7 +19,7 @@ include(FindThreads)
 
 include_directories(src)
 
-add_library(kekrna_lib ${KEKRNA_SOURCE} ${KEKRNA_HEADERS})
+add_library(kekrna_lib ${KEKRNA_SOURCE} ${KEKRNA_HEADERS} src/common.cpp)
 add_executable(kekrna src/main.cpp)
 target_link_libraries(kekrna kekrna_lib)
 

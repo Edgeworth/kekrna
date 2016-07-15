@@ -2,6 +2,7 @@
 #define KEKRNA_ENERGY_H
 
 #include <utility>
+#include <string>
 #include <deque>
 #include "common.h"
 #include "base.h"
