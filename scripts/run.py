@@ -70,7 +70,7 @@ class Rnark:
     os.chdir(cwd)
     print(stdout)
     match = re.search(r'Total energy: (.+)', stdout)
-    energy = float(match.group(1))
+    energy = float(match.group(1)) / 10.0
     return (energy, benchmark_results)
 
   def close(self):
@@ -147,7 +147,7 @@ class KekRNA:
       os.path.join(self.loc, 'build', 'kekrna'), rna.seq, rna.db())
     print(stdout)
     match = re.search(r'Computed energy: (.+)', stdout)
-    energy = float(match.group(1))
+    energy = float(match.group(1)) / 10.0
     return (energy, benchmark_results)
 
   def close(self):
