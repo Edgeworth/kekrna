@@ -8,9 +8,21 @@ In all cases where an ordering of base_t p is used (e.g. data tables), it will b
 
 Will use clang with -c. The flag -t specifies the build type. Then run from ./build/kekrna.
 
+### Directories
+
+build: build output directory
+cmake: CMake scripts
+data: energy model data for kekrna
+examples: various dot-bracket example folded RNAs
+extern: external projects (miles_rnastructure, rnark)
+kekvault: Known RNA structures in a sqlite database
+lib: third party libraries for kekrna (gtest)
+scripts: scripts for various things (see below)
+src: source
+tests: tests
+
 ### Compile time options
 
-ENERGY_LOG to control logging.
 TODO: rest of them here
 
 ### Running the tests
