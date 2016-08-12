@@ -4,7 +4,7 @@
 using namespace kekrna;
 
 int main(int argc, char** argv) {
-  Init();
+  LoadEnergyModelFromDataDir();
   testing::InitGoogleTest(&argc, argv);
   return RUN_ALL_TESTS();
 }

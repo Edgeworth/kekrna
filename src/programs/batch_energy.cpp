@@ -7,7 +7,7 @@
 using namespace kekrna;
 
 int main() {
-  Init();
+  LoadEnergyModelFromDataDir();
 
   int idx = 0;
   while (1) {
