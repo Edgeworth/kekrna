@@ -1,6 +1,8 @@
 #ifndef KEKRNA_COMMON_TEST_H
 #define KEKRNA_COMMON_TEST_H
 
+#include <cstdint>
+
 namespace kekrna {
 namespace test {
 
