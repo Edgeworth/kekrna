@@ -8,7 +8,7 @@ using namespace kekrna;
 
 int main(int argc, char* argv[]) {
   verify_expr(argc == 3, "requires two arguments");
-  LoadEnergyModelFromDataDir();
+  LoadEnergyModelFromDataDir("data");
   auto frna = parsing::ParseDotBracketRna(argv[1], argv[2]);
   std::unique_ptr<structure::Structure> structure;
   printf("Energy: %d\n", energy::ComputeEnergy(frna, &structure));
