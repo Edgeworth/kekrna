@@ -6,7 +6,7 @@
 #include "argparse.h"
 #include "base.h"
 #include "parsing.h"
-#include "fold.h"
+#include "fold/fold.h"
 
 using namespace kekrna;
 
@@ -42,19 +42,19 @@ void FuzzRandomRna(int length,
   for (int i = 0; i < length; ++i)
     rna[i] = rand() % 4;
 
-  auto kekrna_dp = kekrna.Fold(rna, false);
-  auto kekrna_efn = kekrna.Efn(kekrna_dp.frna, false);
-  auto rnastructure_dp = rnastructure.Fold(rna, false);
-  auto rnastructure_efn = rnastructure.Efn(rnastructure_dp.frna, false);
+  auto kekrna_dp = kekrna.Fold(rna);
+  auto kekrna_efn = kekrna.Efn(kekrna_dp);
+  auto rnastructure_dp = rnastructure.Fold(rna);
+  auto rnastructure_efn = rnastructure.Efn(rnastructure_dp);
 
-  if (kekrna_dp.energy != kekrna_efn.energy ||
+  if (kekrna_dp.energy != kekrna_efn ||
       kekrna_dp.energy != rnastructure_dp.energy ||
-      kekrna_dp.energy != rnastructure_efn.energy) {
+      kekrna_dp.energy != rnastructure_efn) {
     printf(
         "Diff on %s\n  Rnastructure: dp %d, efn %d\n    %s\n  Kekrna: dp %d, efn %d\n    %s\n\n",
-        parsing::RnaToString(rna).c_str(), rnastructure_dp.energy, rnastructure_efn.energy,
-        parsing::PairsToDotBracket(rnastructure_dp.frna.p).c_str(),
-        kekrna_dp.energy, kekrna_efn.energy, parsing::PairsToDotBracket(kekrna_dp.frna.p).c_str()
+        parsing::RnaToString(rna).c_str(), rnastructure_dp.energy, rnastructure_efn,
+        parsing::PairsToDotBracket(rnastructure_dp.p).c_str(),
+        kekrna_dp.energy, kekrna_efn, parsing::PairsToDotBracket(kekrna_dp.p).c_str()
     );
     return;
   }
