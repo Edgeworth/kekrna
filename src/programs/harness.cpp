@@ -29,7 +29,7 @@ int main(int argc, char* argv[]) {
   std::unique_ptr<kekrna::bridge::RnaPackage> package;
   if (argparse.HasFlag("r")) {
     package = std::move(std::unique_ptr<kekrna::bridge::RnaPackage>(
-        new kekrna::bridge::Rnastructure("extern/rnark/data_tables/")));
+        new kekrna::bridge::Rnastructure("extern/rnark/data_tables/", false)));
   } else if (argparse.HasFlag("m")) {
     package = std::move(std::unique_ptr<kekrna::bridge::RnaPackage>(
         new kekrna::bridge::Rnark("extern/rnark/data_tables/")));
