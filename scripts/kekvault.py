@@ -13,7 +13,7 @@ from rna import RNA
 
 class KekVault:
   def __init__(self, dataset):
-    self.db = sqlite3.connect('kekvault/kekvault.db')
+    self.db = sqlite3.connect('scripts/kekvault.db')
     self.dataset = dataset
 
   def add(self, rna):
