@@ -72,7 +72,23 @@ folded_rna_t Rnastructure::Fold(const rna_t& rna) const {
   return {rna, pairs, energy_t(structure->GetEnergy(1))};
 }
 
-Kekrna::Kekrna(const std::string& data_path) {
+std::unique_ptr<Kekrna> KekrnaFromArgParse(const ArgParse& argparse) {
+  energy_t (*fold_alg)() = &fold::Fold;
+  auto opt = argparse.GetOption("alg");
+  if (opt == "slow")
+    fold_alg = &fold::FoldSlow;
+  else if (opt == "1")
+    fold_alg = &fold::Fold1;
+  else if (opt == "2")
+    fold_alg = &fold::Fold2;
+  else if (opt == "brute")
+    fold_alg = &fold::FoldBruteForce;
+  else
+    verify_expr(false, "unknown fold option");
+  return std::make_unique<Kekrna>(argparse.GetOption("data-path"), fold_alg);
+}
+
+Kekrna::Kekrna(const std::string& data_path, energy_t (*fold_alg_)()) : fold_alg(fold_alg_) {
   verify_expr(data_path.size() && data_path.back() == '/', "invalid data path");
   LoadEnergyModelFromDataDir(data_path);
 }
@@ -95,7 +111,7 @@ energy_t Kekrna::Efn(const folded_rna_t& frna, std::string* desc) const {
 
 folded_rna_t Kekrna::Fold(const rna_t& rna) const {
   SetRna(rna);
-  auto energy = fold::Fold();
+  auto energy = fold_alg();
   return {r, p, energy};
 }
 
