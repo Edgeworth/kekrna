@@ -49,7 +49,7 @@ private:
 };
 
 const std::map<std::string, ArgParse::option_t> KEKRNA_OPTIONS = {
-    {"alg", ArgParse::option_t("which algorithm for kekrna").Arg("slow", {"slow", "1", "2", "3", "4"})},
+    {"alg", ArgParse::option_t("which algorithm for kekrna").Arg("slow", {"slow", "1", "2", "3"})},
     {"data-path", ArgParse::option_t("path to data tables for kekrna").Arg("data/")}
 };
 
