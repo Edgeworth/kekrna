@@ -48,26 +48,26 @@ private:
   bool use_lyngso;
 };
 
-const std::map<std::string, ArgParse::option_t> KEKRNA_OPTIONS = {
-    {"alg", ArgParse::option_t("which algorithm for kekrna").Arg("slow", {"slow", "1", "2", "3"})},
-    {"data-path", ArgParse::option_t("path to data tables for kekrna").Arg("data/")}
-};
-
 // Note that only one energy model can be loaded at a time.
 class Kekrna : public RnaPackage {
 public:
-  Kekrna(const std::string& data_path, energy_t (* fold_alg_)() = &fold::Fold);
+  Kekrna(const std::string& data_path, const fold::fold_fn_t* fold_fn_ = &fold::Fold0);
   Kekrna(const Kekrna&) = delete;
   Kekrna& operator=(const Kekrna&) = delete;
 
   virtual energy_t Efn(const folded_rna_t& frna, std::string* desc = nullptr) const;
   virtual folded_rna_t Fold(const rna_t& rna) const;
 private:
-  energy_t (* fold_alg)();
+  fold::fold_fn_t* fold_fn;
 };
 
-// TODO: change to be able to create all of them
-std::unique_ptr<Kekrna> KekrnaFromArgParse(const ArgParse& argparse);
+const std::map<std::string, ArgParse::option_t> BRIDGE_OPTIONS = {
+    {"r", {"rnastructure"}},
+    {"m", {"rnark"}},
+    {"k", {"kekrna"}}
+};
+
+std::unique_ptr<RnaPackage> RnaPackageFromArgParse(const ArgParse& argparse);
 
 }
 }
