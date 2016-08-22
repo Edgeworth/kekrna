@@ -49,7 +49,7 @@ Rnastructure::Rnastructure(const std::string& data_path, bool use_lyngso_) :
   verify_expr(data_path.size() && data_path.back() == '/', "invalid data path");
 }
 
-energy_t Rnastructure::Efn(const folded_rna_t& frna, std::string* desc) const {
+energy_t Rnastructure::Efn(const folded_rna_t& frna, std::string*) const {
   auto structure = librnary::LoadStructure(
       librnary::StringToPrimary(parsing::RnaToString(frna.r)),
       librnary::DotBracketToMatching(parsing::PairsToDotBracket(frna.p))
@@ -82,6 +82,10 @@ Kekrna::Kekrna(const std::string& data_path, const fold::fold_fn_t* fold_fn_) : 
   LoadEnergyModelFromDataDir(data_path);
 }
 
+Kekrna::Kekrna(Kekrna&& kek) {
+  fold_fn = kek.fold_fn;
+}
+
 energy_t Kekrna::Efn(const folded_rna_t& frna, std::string* desc) const {
   energy_t energy;
   if (desc) {
@@ -106,15 +110,14 @@ folded_rna_t Kekrna::FoldAndDpTable(const rna_t& rna, fold::fold_state_t* fold_s
   return fold_fn(rna, fold_state);
 }
 
-
 std::unique_ptr<RnaPackage> RnaPackageFromArgParse(const ArgParse& argparse) {
   verify_expr(
       argparse.HasFlag("r") + argparse.HasFlag("m") + argparse.HasFlag("k") == 1,
       "require exactly one package flag\n%s", argparse.Usage().c_str());
   if (argparse.HasFlag("r")) {
-    return std::unique_ptr<RnaPackage>(new bridge::Rnastructure("extern/rnark/data_tables/", false));
+    return std::unique_ptr<RnaPackage>(new Rnastructure("extern/rnark/data_tables/", false));
   } else if (argparse.HasFlag("m")) {
-    return std::unique_ptr<RnaPackage>(new bridge::Rnark("extern/rnark/data_tables/"));
+    return std::unique_ptr<RnaPackage>(new Rnark("extern/rnark/data_tables/"));
   } else {
     return std::unique_ptr<RnaPackage>(new Kekrna("data/", FoldFunctionFromArgParse(argparse)));
   }

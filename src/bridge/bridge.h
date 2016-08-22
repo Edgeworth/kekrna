@@ -17,7 +17,6 @@ public:
   virtual ~RnaPackage() = default;
 
   virtual energy_t Efn(const folded_rna_t& frna, std::string* desc = nullptr) const = 0;
-
   virtual folded_rna_t Fold(const rna_t& rna) const = 0;
 };
 
@@ -56,6 +55,7 @@ public:
   Kekrna(const std::string& data_path, const fold::fold_fn_t* fold_fn_ = &fold::Fold0);
   Kekrna(const Kekrna&) = delete;
   Kekrna& operator=(const Kekrna&) = delete;
+  Kekrna(Kekrna&& kek);
 
   virtual energy_t Efn(const folded_rna_t& frna, std::string* desc = nullptr) const;
   virtual folded_rna_t Fold(const rna_t& rna) const;
