@@ -7,7 +7,7 @@ In all cases where an ordering of base_t p is used (e.g. data tables), it will b
 Run git submodule init and git submodule update to pull in external dependencies.
 Make sure you are on the right branch for them.
 
-./build.py -t [debug, asan, msan, ubsan, release] -c
+./build.py -t [debug, asan, msan, ubsan, release, 'relwithdebinfo'] -c
 
 Will use clang with -c. The flag -t specifies the build type. Then run from ./build/kekrna.
 
@@ -19,9 +19,7 @@ build: build output directory
 cmake: CMake scripts
 data: energy model data for kekrna
 examples: various dot-bracket example folded RNAs
-extern: external projects (miles_rnastructure, rnark)
-kekvault: Known RNA structures in a sqlite database
-lib: third party libraries for kekrna (gtest)
+extern: external projects and data (gtest, original data from rnastructure and nndb, rnark)
 scripts: scripts for various things (see below)
 src: source
 tests: tests
@@ -35,17 +33,12 @@ Run from ./build/run_tests after building.
 
 ### Useful commands
 
-./scripts/run_efn.py --rnastructure-loc=<> -f <ct or db filename>
-Runs EFN for various packages. Can also specify kekvault RNA via -k <kekvault name>.
-
-./scripts/run_fold.py --rnastructure-loc=<> -f <ct or db filename>
-Runs folding for various packages
-
 ./scripts/run_benchmarks.py
 Runs benchmarking for various packages.
 
-./scripts/run.py
-Supports EFN or folding through -e and -p respectively. Benchmarking through -b.
+./scripts/run.py --rnastructure-loc=<> -p <ct or db filename>
+Supports EFN or folding through -e and -f respectively. Benchmarking through -b.
+Can also specify kekvault RNA via -kv <kekvault name>.
 
 ./scripts/plot_benchmarks.py
 Plots the output of the benchmarking.
@@ -61,6 +54,3 @@ Crops images in a directory.
 
 ./scripts/convert.py
 Converts between db and ct files.
-
-./scripts/scrape.py
-Can scrape RNAstrand for information. This was a bit of a one-time script. Contains kekvault code.
