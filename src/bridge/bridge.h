@@ -52,7 +52,7 @@ private:
 // Note that only one energy model can be loaded at a time.
 class Kekrna : public RnaPackage {
 public:
-  Kekrna(const fold::fold_fn_t* fold_fn_) : fold_fn(fold_fn_) {}
+  Kekrna(fold::fold_fn_t* const fold_fn_) : fold_fn(fold_fn_) {}
   Kekrna(const Kekrna&) = delete;
   Kekrna& operator=(const Kekrna&) = delete;
   Kekrna(Kekrna&& kek) {
