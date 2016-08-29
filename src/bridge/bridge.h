@@ -53,8 +53,10 @@ private:
 class Kekrna : public RnaPackage {
 public:
   Kekrna(fold::fold_fn_t* const fold_fn_) : fold_fn(fold_fn_) {}
+
   Kekrna(const Kekrna&) = delete;
   Kekrna& operator=(const Kekrna&) = delete;
+
   Kekrna(Kekrna&& kek) {
     fold_fn = kek.fold_fn;
   }

@@ -53,7 +53,6 @@ void FuzzRna(const rna_t& rna, bool use_random_energy_model,
       mfe_diff = true;
   }
 
-
   int st = 0, en = 0, a = 0;
   bool dp_table_diff = false;
   int N = int(rna.size());
@@ -78,7 +77,7 @@ void FuzzRna(const rna_t& rna, bool use_random_energy_model,
             rnastructureval = rnastructure_state.w.f(st + 1, en + 1);
           if (rnastructureval != constants::MAX_E &&
               ((kekrna0 < constants::CAP_E) != (rnastructureval < INFINITE_ENERGY - 1000) ||
-              (kekrna0 < constants::CAP_E && kekrna0 != rnastructureval))) {
+                  (kekrna0 < constants::CAP_E && kekrna0 != rnastructureval))) {
             dp_table_diff = true;
             goto loop_end;
           }
