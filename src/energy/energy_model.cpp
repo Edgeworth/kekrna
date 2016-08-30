@@ -41,15 +41,15 @@ std::string SerialiseEnergyModel() {
   APPEND_DATA(g_hairpin_all_c_a);
   APPEND_DATA(g_hairpin_all_c_b);
 
-  for (const auto& v : g_hairpin_e) {
+  for (const auto& v : g_hairpin) {
     data += v.first;
     APPEND_DATA(v.second);
   }
 
   APPEND_DATA(g_multiloop_hack_a);
   APPEND_DATA(g_multiloop_hack_b);
-  APPEND_DATA(g_dangle5_e);
-  APPEND_DATA(g_dangle3_e);
+  APPEND_DATA(g_dangle5);
+  APPEND_DATA(g_dangle3);
   APPEND_DATA(g_coax_mismatch_non_contiguous);
   APPEND_DATA(g_coax_mismatch_wc_bonus);
   APPEND_DATA(g_coax_mismatch_gu_bonus);
@@ -99,21 +99,21 @@ void LoadRandomEnergyModel(uint_fast32_t seed) {
   RANDOMISE_DATA(g_hairpin_all_c_a);
   RANDOMISE_DATA(g_hairpin_all_c_b);
 
-  g_hairpin_e.clear();
+  g_hairpin.clear();
   std::uniform_int_distribution<int> hairpin_size_dist(constants::HAIRPIN_MIN_SZ, RAND_MAX_HAIRPIN_SZ);
   static_assert(constants::HAIRPIN_MIN_SZ <= RAND_MAX_HAIRPIN_SZ,
       "HAIRPIN_MIN_SZ > RAND_MAX_HAIRPIN does not make sense");
   std::uniform_int_distribution<int> num_hairpin_dist(constants::HAIRPIN_MIN_SZ, RAND_MAX_NUM_HAIRPIN);
   int num_hairpin = num_hairpin_dist(eng);
   for (int i = 0; i < num_hairpin; ++i) {
-    auto hairpin = parsing::RnaToString(GenerateRandomRna(hairpin_size_dist(eng), eng));
-    g_hairpin_e[hairpin] = energy_dist(eng);
+    auto hairpin = parsing::PrimaryToString(GenerateRandomPrimary(hairpin_size_dist(eng), eng));
+    g_hairpin[hairpin] = energy_dist(eng);
   }
 
   RANDOMISE_DATA(g_multiloop_hack_a);
   RANDOMISE_DATA(g_multiloop_hack_b);
-  RANDOMISE_DATA(g_dangle5_e);
-  RANDOMISE_DATA(g_dangle3_e);
+  RANDOMISE_DATA(g_dangle5);
+  RANDOMISE_DATA(g_dangle3);
   RANDOMISE_DATA(g_coax_mismatch_non_contiguous);
   RANDOMISE_DATA(g_coax_mismatch_wc_bonus);
   RANDOMISE_DATA(g_coax_mismatch_gu_bonus);
@@ -157,7 +157,7 @@ void LoadEnergyModelFromDataDir(const std::string& data_dir) {
   kekrna::parsing::Parse2x2FromFile(data_dir + "/terminal.data", kekrna::g_terminal);
 
   // Hairpin data.
-  kekrna::parsing::ParseMapFromFile(data_dir + "/hairpin.data", kekrna::g_hairpin_e);
+  kekrna::parsing::ParseMapFromFile(data_dir + "/hairpin.data", kekrna::g_hairpin);
   kekrna::parsing::ParseInitiationEnergyFromFile(data_dir + "/hairpin_initiation.data", kekrna::g_hairpin_init);
 
   // Bulge loop data.
@@ -172,8 +172,8 @@ void LoadEnergyModelFromDataDir(const std::string& data_dir) {
   kekrna::parsing::Parse2x2FromFile(data_dir + "/internal_other_mismatch.data", kekrna::g_internal_other_mismatch);
 
   // Dangle data.
-  kekrna::parsing::ParseDangleDataFromFile(data_dir + "/dangle3.data", kekrna::g_dangle3_e);
-  kekrna::parsing::ParseDangleDataFromFile(data_dir + "/dangle5.data", kekrna::g_dangle5_e);
+  kekrna::parsing::ParseDangleDataFromFile(data_dir + "/dangle3.data", kekrna::g_dangle3);
+  kekrna::parsing::ParseDangleDataFromFile(data_dir + "/dangle5.data", kekrna::g_dangle5);
 
   // Other misc data.
   kekrna::parsing::ParseMiscDataFromFile(data_dir + "/misc.data");
