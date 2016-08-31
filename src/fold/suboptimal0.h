@@ -1,5 +1,5 @@
-#ifndef KEKRNA_SUBOPTIMAL_H
-#define KEKRNA_SUBOPTIMAL_H
+#ifndef KEKRNA_SUBOPTIMAL0_H
+#define KEKRNA_SUBOPTIMAL0_H
 
 #include <stack>
 #include "common.h"
@@ -11,10 +11,11 @@ namespace fold {
 
 std::vector<computed_t> SuboptimalTraceback0(
     energy_t max_energy, int max_structures,
+    const primary_t& r,
     const array3d_t<energy_t, DP_SIZE>& arr,
     const array2d_t<energy_t, EXT_SIZE>& exterior);
 
 }
 }
 
-#endif   //KEKRNA_SUBOPTIMAL_H
+#endif   //KEKRNA_SUBOPTIMAL0_H
