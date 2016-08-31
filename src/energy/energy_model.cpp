@@ -69,8 +69,8 @@ std::string SerialiseEnergyModel() {
 
 void LoadRandomEnergyModel(uint_fast32_t seed) {
   std::mt19937 eng(seed);
-  std::uniform_int_distribution<kekrna::energy_t> energy_dist(RAND_MIN_ENERGY, RAND_MAX_ENERGY);
-  std::uniform_int_distribution<kekrna::energy_t> nonneg_energy_dist(0, RAND_MAX_ENERGY);
+  std::uniform_int_distribution<energy_t> energy_dist(RAND_MIN_ENERGY, RAND_MAX_ENERGY);
+  std::uniform_int_distribution<energy_t> nonneg_energy_dist(0, RAND_MAX_ENERGY);
 #define RANDOMISE_DATA(d) \
   do { \
     auto dp = reinterpret_cast<energy_t*>(&d); \
@@ -151,32 +151,32 @@ uint32_t EnergyModelChecksum() {
 
 void LoadEnergyModelFromDataDir(const std::string& data_dir) {
   // Stacking interaction data.
-  kekrna::parsing::Parse2x2FromFile(data_dir + "/stacking.data", kekrna::g_stack);
+  parsing::Parse2x2FromFile(data_dir + "/stacking.data", g_stack);
 
   // Terminal mismatch data.
-  kekrna::parsing::Parse2x2FromFile(data_dir + "/terminal.data", kekrna::g_terminal);
+  parsing::Parse2x2FromFile(data_dir + "/terminal.data", g_terminal);
 
   // Hairpin data.
-  kekrna::parsing::ParseMapFromFile(data_dir + "/hairpin.data", kekrna::g_hairpin);
-  kekrna::parsing::ParseInitiationEnergyFromFile(data_dir + "/hairpin_initiation.data", kekrna::g_hairpin_init);
+  parsing::ParseMapFromFile(data_dir + "/hairpin.data", g_hairpin);
+  parsing::ParseInitiationEnergyFromFile(data_dir + "/hairpin_initiation.data", g_hairpin_init);
 
   // Bulge loop data.
-  kekrna::parsing::ParseInitiationEnergyFromFile(data_dir + "/bulge_initiation.data", kekrna::g_bulge_init);
+  parsing::ParseInitiationEnergyFromFile(data_dir + "/bulge_initiation.data", g_bulge_init);
 
   // Internal loop data.
-  kekrna::parsing::ParseInitiationEnergyFromFile(data_dir + "/internal_initiation.data", kekrna::g_internal_init);
-  kekrna::parsing::ParseInternalLoop1x1FromFile(data_dir + "/internal_1x1.data");
-  kekrna::parsing::ParseInternalLoop1x2FromFile(data_dir + "/internal_1x2.data");
-  kekrna::parsing::ParseInternalLoop2x2FromFile(data_dir + "/internal_2x2.data");
-  kekrna::parsing::Parse2x2FromFile(data_dir + "/internal_2x3_mismatch.data", kekrna::g_internal_2x3_mismatch);
-  kekrna::parsing::Parse2x2FromFile(data_dir + "/internal_other_mismatch.data", kekrna::g_internal_other_mismatch);
+  parsing::ParseInitiationEnergyFromFile(data_dir + "/internal_initiation.data", g_internal_init);
+  parsing::ParseInternalLoop1x1FromFile(data_dir + "/internal_1x1.data");
+  parsing::ParseInternalLoop1x2FromFile(data_dir + "/internal_1x2.data");
+  parsing::ParseInternalLoop2x2FromFile(data_dir + "/internal_2x2.data");
+  parsing::Parse2x2FromFile(data_dir + "/internal_2x3_mismatch.data", g_internal_2x3_mismatch);
+  parsing::Parse2x2FromFile(data_dir + "/internal_other_mismatch.data", g_internal_other_mismatch);
 
   // Dangle data.
-  kekrna::parsing::ParseDangleDataFromFile(data_dir + "/dangle3.data", kekrna::g_dangle3);
-  kekrna::parsing::ParseDangleDataFromFile(data_dir + "/dangle5.data", kekrna::g_dangle5);
+  parsing::ParseDangleDataFromFile(data_dir + "/dangle3.data", g_dangle3);
+  parsing::ParseDangleDataFromFile(data_dir + "/dangle5.data", g_dangle5);
 
   // Other misc data.
-  kekrna::parsing::ParseMiscDataFromFile(data_dir + "/misc.data");
+  parsing::ParseMiscDataFromFile(data_dir + "/misc.data");
 
   std::string reason;
   verify_expr(IsValidEnergyModel(&reason), "invalid energy model: %s", reason.c_str());

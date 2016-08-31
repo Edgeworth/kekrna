@@ -1,5 +1,4 @@
 #include "parsing.h"
-#include "constants.h"
 
 namespace kekrna {
 namespace parsing {
