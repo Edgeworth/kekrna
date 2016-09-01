@@ -23,7 +23,7 @@ void FuzzRna(const primary_t& r, bool use_random_energy_model,
     fold::fold_state_t state;
     auto computed = kekrna.FoldAndDpTable(r, &state);
     // TODO check ctd descriptions are the same.
-    kekrna_efns.push_back(energy::ComputeEnergy(secondary_t(computed)).energy);
+    kekrna_efns.push_back(energy::ComputeEnergy(computed.s).energy);
     kekrna_states.push_back(std::move(state));
     kekrna_folds.push_back(std::move(computed));
   }
@@ -48,7 +48,7 @@ void FuzzRna(const primary_t& r, bool use_random_energy_model,
   dp_state_t rnastructure_state;
   if (!use_random_energy_model) {
     rnastructure_computed = rnastructure.FoldAndDpTable(r, &rnastructure_state);
-    rnastructure_efn = rnastructure.Efn(secondary_t(rnastructure_computed));
+    rnastructure_efn = rnastructure.Efn(rnastructure_computed.s);
     if (kekrna_folds[0].energy != rnastructure_computed.energy ||
         kekrna_folds[0].energy != rnastructure_efn)
       mfe_diff = true;
@@ -96,14 +96,14 @@ void FuzzRna(const primary_t& r, bool use_random_energy_model,
     if (mfe_diff) {
       for (int i = 0; i < int(kekrnas.size()); ++i) {
         printf("  Fold%d: %d (dp), %d (efn) - %s\n", i, kekrna_folds[i].energy, kekrna_efns[i],
-            parsing::PairsToDotBracket(kekrna_folds[i].p).c_str());
+            parsing::PairsToDotBracket(kekrna_folds[i].s.p).c_str());
       }
       if (use_brute)
         printf("  BruteFold: %d - %s\n", brute_computed.energy,
-            parsing::PairsToDotBracket(brute_computed.p).c_str());
+            parsing::PairsToDotBracket(brute_computed.s.p).c_str());
       if (!use_random_energy_model)
         printf("  RNAstructure: %d (dp), %d (efn) - %s\n", rnastructure_computed.energy,
-            rnastructure_efn, parsing::PairsToDotBracket(rnastructure_computed.p).c_str());
+            rnastructure_efn, parsing::PairsToDotBracket(rnastructure_computed.s.p).c_str());
     }
     if (dp_table_diff) {
       printf("  DP table difference at %d %d %d:\n", st, en, a);
