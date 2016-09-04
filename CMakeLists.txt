@@ -57,7 +57,7 @@ add_executable(harness src/programs/harness.cpp)
 
 add_subdirectory(extern/gtest)
 enable_testing()
-add_executable(run_tests ${TEST_SOURCE} tests/ctds_test.h)
+add_executable(run_tests ${TEST_SOURCE})
 
 target_link_libraries(run_tests kekrna Threads::Threads gtest)
 target_link_libraries(efn kekrna)
