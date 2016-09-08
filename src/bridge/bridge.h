@@ -3,7 +3,7 @@
 
 #include "argparse.h"
 #include "common.h"
-#include "fold/fold.h"
+#include "fold/context.h"
 
 #include "nn_unpaired_model.hpp"
 #include "RNAstructure/rna_library.h"
@@ -51,7 +51,7 @@ private:
 // Note that only one energy model can be loaded at a time.
 class Kekrna : public RnaPackage {
 public:
-  Kekrna(const energy::EnergyModel& em_, fold::context_options_t options_) : em(em_), options(options_) {}
+  Kekrna(energy::EnergyModelPtr em_, fold::context_options_t options_) : em(em_), options(options_) {}
 
   Kekrna(const Kekrna&) = delete;
   Kekrna& operator=(const Kekrna&) = delete;
@@ -59,7 +59,7 @@ public:
   virtual energy_t Efn(const secondary_t& secondary, std::string* desc = nullptr) const;
   virtual computed_t Fold(const primary_t& r) const;
 private:
-  const energy::EnergyModel em;
+  const energy::EnergyModelPtr em;
   const fold::context_options_t options;
 };
 
