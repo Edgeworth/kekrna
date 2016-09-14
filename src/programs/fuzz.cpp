@@ -15,6 +15,7 @@ using namespace fold;
 using namespace fold::internal;
 
 const int SUBOPT_BRUTE_MAX_STRUCTURES = 10000;
+const int SUBOPT_KEKRNA_MAX_STRUCTURES = 100;
 const energy_t SUBOPT_MAX_DELTA = 6;  // Same as RNAstructure default.
 
 #include "energy/structure.h"
@@ -23,34 +24,20 @@ class Fuzzer {
 public:
   typedef std::deque<std::string> error_t;
 
-  Fuzzer(const primary_t& r_, const energy::EnergyModelPtr em_, bool random_model_, uint_fast32_t seed_,
-      const std::vector<context_options_t>& kekrnas_, const bridge::Rnastructure& rnastructure_)
+  Fuzzer(const primary_t& r_, const energy::EnergyModelPtr em_,
+      bool random_model_, uint_fast32_t seed_, const bridge::Rnastructure& rnastructure_)
       : r(r_), em(random_model_ ? energy::LoadRandomEnergyModel(seed) : em_),
-        random_model(random_model_), seed(seed_), kekrnas(kekrnas_), rnastructure(rnastructure_) {}
+        random_model(random_model_), seed(seed_), rnastructure(rnastructure_) {}
 
   error_t Run() {
     error_t errors;
     AppendErrors(errors, MaybePrependHeader(KekrnaComputeAndCheckState(), "kekrna:"));
-    if (!random_model) {
+    if (!random_model)
       AppendErrors(errors, MaybePrependHeader(RnastructureComputeAndCheckState(), "rnastructure:"));
-
-      // Suboptimal folding. Ignore ones with MFE >= -SUBOPT_MAX_DELTA because RNAstructure does strange things
-      // when the energy for suboptimal structures is 0 or above.
-      if (kekrna_computeds[0].energy < -SUBOPT_MAX_DELTA) {
-        context_options_t options(context_options_t::TableAlg::TWO, context_options_t::SuboptimalAlg::ZERO);
-        Context ctx(r, em, options);
-        auto kekrna_subopt = ctx.Suboptimal(SUBOPT_MAX_DELTA, -1);
-        const auto rnastructure_subopt = rnastructure.Suboptimal(r, SUBOPT_MAX_DELTA);
-        AppendErrors(errors, MaybePrependHeader(CheckSuboptimal(kekrna_subopt, true), "kekrna suboptimal:"));
-        AppendErrors(errors,
-            MaybePrependHeader(CheckSuboptimal(rnastructure_subopt, false), "rnastructure suboptimal:"));
-        AppendErrors(errors, MaybePrependHeader(CheckSuboptimalPair(
-            kekrna_subopt, rnastructure_subopt), "kekrna vs rnastructure suboptimal:"));
-      }
-    }
     if (r.size() <= 25)
       AppendErrors(errors, MaybePrependHeader(CheckBruteForce(), "brute force:"));
     AppendErrors(errors, MaybePrependHeader(CheckDpTables(), "dp tables:"));
+    AppendErrors(errors, MaybePrependHeader(CheckSuboptimal(), "suboptimal:"));
 
     if (!errors.empty()) {
       if (random_model)
@@ -69,7 +56,6 @@ private:
   const energy::EnergyModelPtr em;
   const bool random_model;
   const uint_fast32_t seed;
-  const std::vector<context_options_t>& kekrnas;
   const bridge::Rnastructure& rnastructure;
 
   // Fuzz state.
@@ -103,7 +89,7 @@ private:
     return false;
   }
 
-  error_t CheckSuboptimal(const std::vector<computed_t>& subopt, bool has_ctds) {
+  error_t CheckSuboptimalResult(const std::vector<computed_t>& subopt, bool has_ctds) {
     error_t errors;
     // Check at least one suboptimal structure.
     if (subopt.empty())
@@ -139,7 +125,7 @@ private:
     return errors;
   }
 
-  error_t CheckSuboptimalPair(const std::vector<computed_t>& a, const std::vector<computed_t>& b) {
+  error_t CheckSuboptimalResultPair(const std::vector<computed_t>& a, const std::vector<computed_t>& b) {
     error_t errors;
     if (a.size() != b.size()) {
       errors.push_back(sfmt("first has %d structures != second has %d structures", int(a.size()), int(b.size())));
@@ -162,7 +148,7 @@ private:
       for (en = st + constants::HAIRPIN_MIN_SZ + 1; en < N; ++en) {
         for (a = 0; a < DP_SIZE; ++a) {
           const auto kekrna0 = kekrna_dps[0][st][en][a];
-          for (int i = 0; i < int(kekrnas.size()); ++i) {
+          for (int i = 0; i < int(kekrna_dps.size()); ++i) {
             const auto kekrnai = kekrna_dps[i][st][en][a];
             // If meant to be infinity and not.
             if (((kekrna0 < constants::CAP_E) != (kekrnai < constants::CAP_E)) ||
@@ -194,8 +180,8 @@ private:
     // Kekrna.
     std::vector<energy_t> kekrna_ctd_efns;
     std::vector<energy_t> kekrna_optimal_efns;
-    for (const auto& options : kekrnas) {
-      Context ctx(r, em, options);
+    for (auto table_alg : context_options_t::TABLE_ALGS) {
+      Context ctx(r, em, context_options_t(table_alg));
       auto computed = ctx.Fold();
       kekrna_dps.emplace_back(std::move(gdp));
       // First compute with the CTDs that fold returned to check the energy.
@@ -207,7 +193,7 @@ private:
     }
 
     // Check kekrna energies.
-    for (int i = 0; i < int(kekrnas.size()); ++i) {
+    for (int i = 0; i < int(kekrna_dps.size()); ++i) {
       if (kekrna_computeds[0].energy != kekrna_computeds[i].energy ||
           kekrna_computeds[0].energy != kekrna_ctd_efns[i] ||
           kekrna_computeds[0].energy != kekrna_optimal_efns[i])
@@ -236,12 +222,46 @@ private:
     auto subopt_brute = FoldBruteForce(r, *em, SUBOPT_BRUTE_MAX_STRUCTURES);
     auto subopt_kekrna = ctx.Suboptimal(-1, SUBOPT_BRUTE_MAX_STRUCTURES);
 
-    AppendErrors(errors, MaybePrependHeader(CheckSuboptimal(subopt_brute, true), "brute suboptimal:"));
-    AppendErrors(errors, MaybePrependHeader(CheckSuboptimal(subopt_kekrna, true), "kekrna suboptimal:"));
-    AppendErrors(errors, MaybePrependHeader(CheckSuboptimalPair(subopt_brute, subopt_kekrna), "brute vs kekrna suboptimal:"));
+    AppendErrors(errors, MaybePrependHeader(CheckSuboptimalResult(subopt_brute, true), "brute suboptimal:"));
+    AppendErrors(errors, MaybePrependHeader(CheckSuboptimalResult(subopt_kekrna, true), "kekrna suboptimal:"));
+    AppendErrors(errors, MaybePrependHeader(CheckSuboptimalResultPair(subopt_brute, subopt_kekrna), "brute vs kekrna suboptimal:"));
     return errors;
   }
 
+  error_t CheckSuboptimal() {
+    error_t errors;
+    std::vector<std::vector<computed_t>> kekrna_subopts;
+    for (auto subopt_alg : context_options_t::SUBOPTIMAL_ALGS) {
+      context_options_t options(context_options_t::TableAlg::TWO, subopt_alg);
+      Context ctx(r, em, options);
+      kekrna_subopts.push_back(ctx.Suboptimal(-1, SUBOPT_KEKRNA_MAX_STRUCTURES));
+    }
+
+    for (int i = 0; i < int(kekrna_subopts.size()); ++i) {
+      AppendErrors(errors, MaybePrependHeader(
+          CheckSuboptimalResult(kekrna_subopts[i], true), sfmt("kekrna suboptimal %d:", i)));
+      AppendErrors(errors, MaybePrependHeader(CheckSuboptimalResultPair(
+          kekrna_subopts[0], kekrna_subopts[i]), sfmt("kekrna 0 vs kekrna %d suboptimal:", i)));
+    }
+
+    if (!random_model) {
+      // Suboptimal folding. Ignore ones with MFE >= -SUBOPT_MAX_DELTA because RNAstructure does strange things
+      // when the energy for suboptimal structures is 0 or above.
+      if (kekrna_computeds[0].energy < -SUBOPT_MAX_DELTA) {
+        context_options_t options(context_options_t::TableAlg::TWO, context_options_t::SuboptimalAlg::ONE);
+        Context ctx(r, em, options);
+        auto kekrna_subopt = ctx.Suboptimal(SUBOPT_MAX_DELTA, -1);
+        const auto rnastructure_subopt = rnastructure.Suboptimal(r, SUBOPT_MAX_DELTA);
+        AppendErrors(errors, MaybePrependHeader(CheckSuboptimalResult(kekrna_subopt, true), "kekrna suboptimal:"));
+        AppendErrors(errors,
+            MaybePrependHeader(CheckSuboptimalResult(rnastructure_subopt, false), "rnastructure suboptimal:"));
+        AppendErrors(errors, MaybePrependHeader(CheckSuboptimalResultPair(
+            kekrna_subopt, rnastructure_subopt), "kekrna vs rnastructure suboptimal:"));
+      }
+    }
+
+    return errors;
+  }
 };
 
 
@@ -261,10 +281,6 @@ int main(int argc, char* argv[]) {
   verify_expr(max_len >= min_len, "invalid max len");
 
   bridge::Rnastructure rnastructure("extern/rnark/data_tables/", false);
-  std::vector<context_options_t> kekrnas;
-  for (auto table_alg : context_options_t::TABLE_ALGS)
-    kekrnas.emplace_back(table_alg);
-
   auto start_time = std::chrono::steady_clock::now();
   const auto interval = atoi(argparse.GetOption("print-interval").c_str());
   std::uniform_int_distribution<int> len_dist(min_len, max_len);
@@ -280,7 +296,7 @@ int main(int argc, char* argv[]) {
     auto r = GenerateRandomPrimary(len, eng);
 
     uint_fast32_t seed = eng();
-    Fuzzer fuzzer(r, t04em, random_model, seed, kekrnas, rnastructure);
+    Fuzzer fuzzer(r, t04em, random_model, seed, rnastructure);
     const auto res = fuzzer.Run();
     if (!res.empty()) {
       for (const auto& s : res)
