@@ -244,21 +244,22 @@ private:
           kekrna_subopts[0], kekrna_subopts[i]), sfmt("kekrna 0 vs kekrna %d suboptimal:", i)));
     }
 
-    if (!random_model) {
-      // Suboptimal folding. Ignore ones with MFE >= -SUBOPT_MAX_DELTA because RNAstructure does strange things
-      // when the energy for suboptimal structures is 0 or above.
-      if (kekrna_computeds[0].energy < -SUBOPT_MAX_DELTA) {
-        context_options_t options(context_options_t::TableAlg::TWO, context_options_t::SuboptimalAlg::ONE);
-        Context ctx(r, em, options);
-        auto kekrna_subopt = ctx.Suboptimal(SUBOPT_MAX_DELTA, -1);
-        const auto rnastructure_subopt = rnastructure.Suboptimal(r, SUBOPT_MAX_DELTA);
-        AppendErrors(errors, MaybePrependHeader(CheckSuboptimalResult(kekrna_subopt, true), "kekrna suboptimal:"));
-        AppendErrors(errors,
-            MaybePrependHeader(CheckSuboptimalResult(rnastructure_subopt, false), "rnastructure suboptimal:"));
-        AppendErrors(errors, MaybePrependHeader(CheckSuboptimalResultPair(
-            kekrna_subopt, rnastructure_subopt), "kekrna vs rnastructure suboptimal:"));
-      }
-    }
+    // TODO temporarily disabled
+//    if (!random_model) {
+//      // Suboptimal folding. Ignore ones with MFE >= -SUBOPT_MAX_DELTA because RNAstructure does strange things
+//      // when the energy for suboptimal structures is 0 or above.
+//      if (kekrna_computeds[0].energy < -SUBOPT_MAX_DELTA) {
+//        context_options_t options(context_options_t::TableAlg::TWO, context_options_t::SuboptimalAlg::ONE);
+//        Context ctx(r, em, options);
+//        auto kekrna_subopt = ctx.Suboptimal(SUBOPT_MAX_DELTA, -1);
+//        const auto rnastructure_subopt = rnastructure.Suboptimal(r, SUBOPT_MAX_DELTA);
+//        AppendErrors(errors, MaybePrependHeader(CheckSuboptimalResult(kekrna_subopt, true), "kekrna suboptimal:"));
+//        AppendErrors(errors,
+//            MaybePrependHeader(CheckSuboptimalResult(rnastructure_subopt, false), "rnastructure suboptimal:"));
+//        AppendErrors(errors, MaybePrependHeader(CheckSuboptimalResultPair(
+//            kekrna_subopt, rnastructure_subopt), "kekrna vs rnastructure suboptimal:"));
+//      }
+//    }
 
     return errors;
   }

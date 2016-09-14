@@ -1,5 +1,5 @@
 #include <set>
-#include "fold/suboptimal0.h"
+#include "fold/suboptimal2.h"
 
 namespace kekrna {
 namespace fold {
@@ -8,7 +8,7 @@ namespace internal {
 using namespace constants;
 using namespace energy;
 
-std::vector<computed_t> Suboptimal0::Run() {
+std::vector<computed_t> Suboptimal2::Run() {
   const int N = int(gr.size());
 
   // Basic idea of suboptimal traceback is look at all possible choices from a state, and expand just one of them.
@@ -24,9 +24,7 @@ std::vector<computed_t> Suboptimal0::Run() {
       std::vector<Ctd>(gr.size(), CTD_NA),
       gext[0][EXT]
   });
-  int num_loops = 0;
   while (!q.empty()) {
-    num_loops++;
     auto node = std::move(*q.begin());
     q.erase(q.begin());
     // Finished state.
@@ -40,8 +38,9 @@ std::vector<computed_t> Suboptimal0::Run() {
     if (int(finished.size()) >= max_structures && (--finished.end())->energy <= node.energy)
       break;
 
-    auto to_expand = node.not_yet_expanded.back();
-    node.not_yet_expanded.pop_back();
+    // For some reason this seems fast?
+    auto to_expand = node.not_yet_expanded.front();
+    node.not_yet_expanded.erase(node.not_yet_expanded.begin());
     node.history.push_back(to_expand);  // Add to history.
     int st = to_expand.st, en = to_expand.en, a = to_expand.a;
 
@@ -151,16 +150,16 @@ std::vector<computed_t> Suboptimal0::Run() {
       int max_inter = std::min(TWOLOOP_MAX_SZ, en - st - HAIRPIN_MIN_SZ - 3);
       for (int ist = st + 1; ist < st + max_inter + 2; ++ist) {
         for (int ien = en - max_inter + ist - st - 2; ien < en; ++ien) {
-          energy = base_energy + gem.TwoLoop(gr, st, en, ist, ien) + gdp[ist][ien][DP_P];
+          energy = base_energy + FastTwoLoop(st, en, ist, ien) + gdp[ist][ien][DP_P];
           Expand(energy, {ist, ien, DP_P});
         }
       }
 
       // Hairpin loop
-      energy = base_energy + gem.Hairpin(gr, st, en);
+      energy = base_energy + FastHairpin(st, en);
       Expand(energy);
 
-      auto base_and_branch = base_energy + gem.AuGuPenalty(stb, enb) + gem.multiloop_hack_a + gem.multiloop_hack_b;
+      auto base_and_branch = base_energy + gpc.augubranch[stb][enb] + gem.multiloop_hack_a;
       // (<   ><    >)
       energy = base_and_branch + gdp[st + 1][en - 1][DP_U2];
       Expand(energy, {st + 1, en - 1, DP_U2}, {CTD_UNUSED, en});
@@ -179,41 +178,37 @@ std::vector<computed_t> Suboptimal0::Run() {
 
         // (.(   )   .) Left outer coax - P
         auto outer_coax = gem.MismatchCoaxial(stb, st1b, en1b, enb);
-        energy = base_and_branch + gdp[st + 2][piv][DP_P] + gem.multiloop_hack_b +
-            gem.AuGuPenalty(st2b, plb) + gdp[piv + 1][en - 2][DP_U] + outer_coax;
+        energy = base_and_branch + gdp[st + 2][piv][DP_P] + gpc.augubranch[st2b][plb] +
+            gdp[piv + 1][en - 2][DP_U] + outer_coax;
         Expand(energy, {st + 2, piv, DP_P}, {piv + 1, en - 2, DP_U},
             {CTD_LEFT_MISMATCH_COAX_WITH_PREV, st + 2}, {CTD_LEFT_MISMATCH_COAX_WITH_NEXT, en});
 
         // (.   (   ).) Right outer coax
-        energy = base_and_branch + gdp[st + 2][piv][DP_U] + gem.multiloop_hack_b +
-            gem.AuGuPenalty(prb, en2b) + gdp[piv + 1][en - 2][DP_P] + outer_coax;
+        energy = base_and_branch + gdp[st + 2][piv][DP_U] + gpc.augubranch[prb][en2b] +
+            gdp[piv + 1][en - 2][DP_P] + outer_coax;
         Expand(energy, {st + 2, piv, DP_U}, {piv + 1, en - 2, DP_P},
             {CTD_RIGHT_MISMATCH_COAX_WITH_NEXT, piv + 1}, {CTD_RIGHT_MISMATCH_COAX_WITH_PREV, en});
 
         // (.(   ).   ) Left right coax
-        energy = base_and_branch + gdp[st + 2][piv - 1][DP_P] + gem.multiloop_hack_b +
-            gem.AuGuPenalty(st2b, pl1b) + gdp[piv + 1][en - 1][DP_U] +
-            gem.MismatchCoaxial(pl1b, plb, st1b, st2b);
+        energy = base_and_branch + gdp[st + 2][piv - 1][DP_P] + gpc.augubranch[st2b][pl1b] +
+            gdp[piv + 1][en - 1][DP_U] + gem.MismatchCoaxial(pl1b, plb, st1b, st2b);
         Expand(energy, {st + 2, piv - 1, DP_P}, {piv + 1, en - 1, DP_U},
             {CTD_RIGHT_MISMATCH_COAX_WITH_PREV, st + 2}, {CTD_RIGHT_MISMATCH_COAX_WITH_NEXT, en});
 
         // (   .(   ).) Right left coax
-        energy = base_and_branch + gdp[st + 1][piv][DP_U] + gem.multiloop_hack_b +
-            gem.AuGuPenalty(pr1b, en2b) + gdp[piv + 2][en - 2][DP_P] +
-            gem.MismatchCoaxial(en2b, en1b, prb, pr1b);
+        energy = base_and_branch + gdp[st + 1][piv][DP_U] + gpc.augubranch[pr1b][en2b] +
+            gdp[piv + 2][en - 2][DP_P] + gem.MismatchCoaxial(en2b, en1b, prb, pr1b);
         Expand(energy, {st + 1, piv, DP_U}, {piv + 2, en - 2, DP_P},
             {CTD_LEFT_MISMATCH_COAX_WITH_NEXT, piv + 2}, {CTD_LEFT_MISMATCH_COAX_WITH_PREV, en});
 
         // ((   )   ) Left flush coax
-        energy = base_and_branch + gdp[st + 1][piv][DP_P] +
-            gem.multiloop_hack_b + gem.AuGuPenalty(st1b, plb) +
+        energy = base_and_branch + gdp[st + 1][piv][DP_P] + gpc.augubranch[st1b][plb] +
             gdp[piv + 1][en - 1][DP_U] + gem.stack[stb][st1b][plb][enb];
         Expand(energy, {st + 1, piv, DP_P}, {piv + 1, en - 1, DP_U},
             {CTD_FLUSH_COAX_WITH_PREV, st + 1}, {CTD_FLUSH_COAX_WITH_NEXT, en});
 
         // (   (   )) Right flush coax
-        energy = base_and_branch + gdp[st + 1][piv][DP_U] +
-            gem.multiloop_hack_b + gem.AuGuPenalty(prb, en1b) +
+        energy = base_and_branch + gdp[st + 1][piv][DP_U] + gpc.augubranch[prb][en1b] +
             gdp[piv + 1][en - 1][DP_P] + gem.stack[stb][prb][en1b][enb];
         Expand(energy, {st + 1, piv, DP_U}, {piv + 1, en - 1, DP_P},
             {CTD_FLUSH_COAX_WITH_NEXT, piv + 1}, {CTD_FLUSH_COAX_WITH_PREV, en});
@@ -231,10 +226,10 @@ std::vector<computed_t> Suboptimal0::Run() {
         // stb pl1b pb   pr1b
         auto pb = gr[piv], pl1b = gr[piv - 1];
         // baseAB indicates A bases left unpaired on the left, B bases left unpaired on the right.
-        auto base00 = gdp[st][piv][DP_P] + gem.AuGuPenalty(stb, pb) + gem.multiloop_hack_b;
-        auto base01 = gdp[st][piv - 1][DP_P] + gem.AuGuPenalty(stb, pl1b) + gem.multiloop_hack_b;
-        auto base10 = gdp[st + 1][piv][DP_P] + gem.AuGuPenalty(st1b, pb) + gem.multiloop_hack_b;
-        auto base11 = gdp[st + 1][piv - 1][DP_P] + gem.AuGuPenalty(st1b, pl1b) + gem.multiloop_hack_b;
+        auto base00 = gdp[st][piv][DP_P] + gpc.augubranch[stb][pb];
+        auto base01 = gdp[st][piv - 1][DP_P] + gpc.augubranch[stb][pl1b];
+        auto base10 = gdp[st + 1][piv][DP_P] + gpc.augubranch[st1b][pb];
+        auto base11 = gdp[st + 1][piv - 1][DP_P] + gpc.augubranch[st1b][pl1b];
 
         // Check a == U_RCOAX:
         // (   ).<( ** ). > Right coax backward
@@ -314,6 +309,7 @@ std::vector<computed_t> Suboptimal0::Run() {
       }
     }
   }
+
   std::vector<computed_t> ret;
   for (const auto& struc : finished) {
     assert(struc.not_yet_expanded.empty());
