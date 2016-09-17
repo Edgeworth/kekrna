@@ -5,7 +5,6 @@ namespace kekrna {
 namespace fold {
 namespace internal {
 
-using namespace constants;
 using namespace energy;
 
 #define UPDATE_CACHE(a, value) \

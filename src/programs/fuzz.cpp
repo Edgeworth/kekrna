@@ -145,14 +145,14 @@ private:
     int st = 0, en = 0, a = 0;
     const int N = int(r.size());
     for (st = N - 1; st >= 0; --st) {
-      for (en = st + constants::HAIRPIN_MIN_SZ + 1; en < N; ++en) {
+      for (en = st + HAIRPIN_MIN_SZ + 1; en < N; ++en) {
         for (a = 0; a < DP_SIZE; ++a) {
           const auto kekrna0 = kekrna_dps[0][st][en][a];
           for (int i = 0; i < int(kekrna_dps.size()); ++i) {
             const auto kekrnai = kekrna_dps[i][st][en][a];
             // If meant to be infinity and not.
-            if (((kekrna0 < constants::CAP_E) != (kekrnai < constants::CAP_E)) ||
-                (kekrna0 < constants::CAP_E && kekrna0 != kekrnai)) {
+            if (((kekrna0 < CAP_E) != (kekrnai < CAP_E)) ||
+                (kekrna0 < CAP_E && kekrna0 != kekrnai)) {
               errors.push_back(sfmt("kekrna %d at %d %d %d: %d != %d",
                   i, st, en, a, kekrna_dps[i][st][en][a], kekrna_dps[0][st][en][a]));
               goto loopend;
@@ -161,8 +161,8 @@ private:
           if (!random_model && (a == DP_P || a == DP_U)) {
             energy_t rnastructureval = a == DP_P ?
                 rnastructure_dp.v.f(st + 1, en + 1) : rnastructure_dp.w.f(st + 1, en + 1);
-            if (((kekrna0 < constants::CAP_E) != (rnastructureval < INFINITE_ENERGY - 1000) ||
-                (kekrna0 < constants::CAP_E && kekrna0 != rnastructureval))) {
+            if (((kekrna0 < CAP_E) != (rnastructureval < INFINITE_ENERGY - 1000) ||
+                (kekrna0 < CAP_E && kekrna0 != rnastructureval))) {
               errors.push_back(sfmt("rnastructure at %d %d %d: %d != %d",
                   st, en, a, rnastructureval, kekrna_dps[0][st][en][a]));
               goto loopend;
