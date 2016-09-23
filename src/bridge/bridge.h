@@ -18,13 +18,10 @@ public:
 };
 
 const std::map<std::string, ArgParse::option_t> BRIDGE_OPTIONS = {
-    {"r", {"rnastructure"}},
-    {"k", {"kekrna"}}
-};
+    {"r", {"rnastructure"}}, {"k", {"kekrna"}}};
 
 std::unique_ptr<RnaPackage> RnaPackageFromArgParse(const ArgParse& argparse);
-
 }
 }
 
-#endif //KEKRNA_BRIDGE_H
+#endif  // KEKRNA_BRIDGE_H
