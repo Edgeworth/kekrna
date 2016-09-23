@@ -1,6 +1,5 @@
 #include <stack>
 #include "fold/fold_internal.h"
-#include "fold/globals.h"
 
 namespace kekrna {
 namespace fold {

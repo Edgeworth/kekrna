@@ -1,9 +1,7 @@
 #include "fold/context.h"
-#include <stack>
 #include "fold/brute_fold.h"
 #include "fold/suboptimal0.h"
 #include "fold/suboptimal1.h"
-#include "parsing.h"
 
 namespace kekrna {
 namespace fold {
