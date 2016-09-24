@@ -173,9 +173,9 @@ private:
           }
           if (!random_model && (a == DP_P || a == DP_U)) {
             energy_t rnastructureval = a == DP_P ? rnastructure_dp.v.f(st + 1, en + 1)
-                                                 : rnastructure_dp.w.f(st + 1, en + 1);
+                : rnastructure_dp.w.f(st + 1, en + 1);
             if (((kekrna0 < CAP_E) != (rnastructureval < INFINITE_ENERGY - 1000) ||
-                    (kekrna0 < CAP_E && kekrna0 != rnastructureval))) {
+                (kekrna0 < CAP_E && kekrna0 != rnastructureval))) {
               errors.push_back(sfmt("rnastructure at %d %d %d: %d != %d", st, en, a,
                   rnastructureval, kekrna_dps[0][st][en][a]));
               goto loopend;
@@ -184,7 +184,7 @@ private:
         }
       }
     }
-  loopend:
+    loopend:
     return errors;
   }
 
@@ -242,7 +242,7 @@ private:
     AppendErrors(errors,
         MaybePrependHeader(CheckSuboptimalResult(subopt_kekrna, true), "kekrna suboptimal:"));
     AppendErrors(errors, MaybePrependHeader(CheckSuboptimalResultPair(subopt_brute, subopt_kekrna),
-                             "brute vs kekrna suboptimal:"));
+        "brute vs kekrna suboptimal:"));
     return errors;
   }
 
@@ -257,10 +257,10 @@ private:
 
     for (int i = 0; i < int(kekrna_subopts.size()); ++i) {
       AppendErrors(errors, MaybePrependHeader(CheckSuboptimalResult(kekrna_subopts[i], true),
-                               sfmt("kekrna suboptimal %d:", i)));
+          sfmt("kekrna suboptimal %d:", i)));
       AppendErrors(errors,
           MaybePrependHeader(CheckSuboptimalResultPair(kekrna_subopts[0], kekrna_subopts[i]),
-                       sfmt("kekrna 0 vs kekrna %d suboptimal:", i)));
+              sfmt("kekrna 0 vs kekrna %d suboptimal:", i)));
     }
 
     if (do_subopt_rnastructure) {
@@ -276,10 +276,10 @@ private:
         AppendErrors(errors,
             MaybePrependHeader(CheckSuboptimalResult(kekrna_subopt, true), "kekrna suboptimal:"));
         AppendErrors(errors, MaybePrependHeader(CheckSuboptimalResult(rnastructure_subopt, false),
-                                 "rnastructure suboptimal:"));
+            "rnastructure suboptimal:"));
         AppendErrors(errors,
             MaybePrependHeader(CheckSuboptimalResultPair(kekrna_subopt, rnastructure_subopt),
-                         "kekrna vs rnastructure suboptimal:"));
+                "kekrna vs rnastructure suboptimal:"));
       }
     }
 
@@ -290,7 +290,7 @@ private:
 int main(int argc, char* argv[]) {
   std::mt19937 eng(uint_fast32_t(time(nullptr)));
   ArgParse argparse({{"print-interval",
-                         ArgParse::option_t("status update every n seconds").Arg("-1")},
+      ArgParse::option_t("status update every n seconds").Arg("-1")},
       {"random",
           ArgParse::option_t("use random energy models (disables comparison to RNAstructure)")},
       {"no-subopt", ArgParse::option_t("do not test suboptimal folding")},
@@ -314,21 +314,21 @@ int main(int argc, char* argv[]) {
     __AFL_INIT();
     while (__AFL_LOOP(1000)) {
 #endif
-      char buf[4096];
-      std::size_t len = fread(buf, 1, sizeof(buf), stdin);
-      if (len > 0) {
-        uint_fast32_t seed = eng();
-        // Disable brute force testing for AFL since it's too slow.
-        Fuzzer fuzzer(parsing::StringToPrimary(std::string(buf, len)), t04em, random_model, seed,
-            rnastructure, do_subopt, do_subopt_rnastructure, 0);
-        const auto res = fuzzer.Run();
-        if (!res.empty()) {
-          for (const auto& s : res)
-            printf("%s\n", s.c_str());
-          printf("\n");
-          verify_expr(false, "crash!");
-        }
+    char buf[4096];
+    std::size_t len = fread(buf, 1, sizeof(buf), stdin);
+    if (len > 0) {
+      uint_fast32_t seed = eng();
+      // Disable brute force testing for AFL since it's too slow.
+      Fuzzer fuzzer(parsing::StringToPrimary(std::string(buf, len)), t04em, random_model, seed,
+          rnastructure, do_subopt, do_subopt_rnastructure, 0);
+      const auto res = fuzzer.Run();
+      if (!res.empty()) {
+        for (const auto& s : res)
+          printf("%s\n", s.c_str());
+        printf("\n");
+        verify_expr(false, "crash!");
       }
+    }
 #ifdef __AFL_HAVE_MANUAL_CONTROL
     }
 #endif
@@ -358,7 +358,7 @@ int main(int argc, char* argv[]) {
       if (interval > 0 &&
           std::chrono::duration_cast<std::chrono::seconds>(
               std::chrono::steady_clock::now() - start_time)
-                  .count() > interval) {
+              .count() > interval) {
         printf("Fuzzed %" PRId64 " RNA\n", i);
         start_time = std::chrono::steady_clock::now();
       }
