@@ -235,7 +235,7 @@ private:
         context_options_t::TableAlg::TWO, context_options_t::SuboptimalAlg::ZERO);
     Context ctx(r, em, options);
     auto subopt_brute = FoldBruteForce(r, *em, SUBOPT_BRUTE_MAX_STRUCTURES);
-    auto subopt_kekrna = ctx.Suboptimal(-1, SUBOPT_BRUTE_MAX_STRUCTURES);
+    auto subopt_kekrna = ctx.SuboptimalSorted(-1, SUBOPT_BRUTE_MAX_STRUCTURES);
 
     AppendErrors(
         errors, MaybePrependHeader(CheckSuboptimalResult(subopt_brute, true), "brute suboptimal:"));
@@ -248,19 +248,28 @@ private:
 
   error_t CheckSuboptimal() {
     error_t errors;
-    std::vector<std::vector<computed_t>> kekrna_subopts;
+    std::vector<std::vector<computed_t>> kekrna_subopts_delta, kekrna_subopts_num;
     for (auto subopt_alg : context_options_t::SUBOPTIMAL_ALGS) {
       context_options_t options(context_options_t::TableAlg::TWO, subopt_alg);
       Context ctx(r, em, options);
-      kekrna_subopts.push_back(ctx.Suboptimal(-1, SUBOPT_KEKRNA_MAX_STRUCTURES));
+      kekrna_subopts_delta.push_back(ctx.SuboptimalSorted(SUBOPT_MAX_DELTA, -1));
+      kekrna_subopts_num.push_back(ctx.SuboptimalSorted(-1, SUBOPT_KEKRNA_MAX_STRUCTURES));
     }
 
-    for (int i = 0; i < int(kekrna_subopts.size()); ++i) {
-      AppendErrors(errors, MaybePrependHeader(CheckSuboptimalResult(kekrna_subopts[i], true),
-          sfmt("kekrna suboptimal %d:", i)));
+    for (int i = 0; i < int(kekrna_subopts_delta.size()); ++i) {
+      AppendErrors(errors, MaybePrependHeader(CheckSuboptimalResult(kekrna_subopts_delta[i], true),
+          sfmt("kekrna delta suboptimal %d:", i)));
       AppendErrors(errors,
-          MaybePrependHeader(CheckSuboptimalResultPair(kekrna_subopts[0], kekrna_subopts[i]),
-              sfmt("kekrna 0 vs kekrna %d suboptimal:", i)));
+          MaybePrependHeader(CheckSuboptimalResultPair(kekrna_subopts_delta[0], kekrna_subopts_delta[i]),
+              sfmt("kekrna 0 vs kekrna %d delta suboptimal:", i)));
+    }
+
+    for (int i = 0; i < int(kekrna_subopts_num.size()); ++i) {
+      AppendErrors(errors, MaybePrependHeader(CheckSuboptimalResult(kekrna_subopts_num[i], true),
+          sfmt("kekrna num suboptimal %d:", i)));
+      AppendErrors(errors,
+          MaybePrependHeader(CheckSuboptimalResultPair(kekrna_subopts_num[0], kekrna_subopts_num[i]),
+              sfmt("kekrna 0 vs kekrna %d num suboptimal:", i)));
     }
 
     if (do_subopt_rnastructure) {
@@ -271,7 +280,7 @@ private:
         context_options_t options(
             context_options_t::TableAlg::TWO, context_options_t::SuboptimalAlg::ONE);
         Context ctx(r, em, options);
-        auto kekrna_subopt = ctx.Suboptimal(SUBOPT_MAX_DELTA, -1);
+        auto kekrna_subopt = ctx.SuboptimalSorted(SUBOPT_MAX_DELTA, -1);
         const auto rnastructure_subopt = rnastructure.Suboptimal(r, SUBOPT_MAX_DELTA);
         AppendErrors(errors,
             MaybePrependHeader(CheckSuboptimalResult(kekrna_subopt, true), "kekrna suboptimal:"));
