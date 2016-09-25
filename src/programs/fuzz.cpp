@@ -235,7 +235,7 @@ private:
         context_options_t::TableAlg::TWO, context_options_t::SuboptimalAlg::ZERO);
     Context ctx(r, em, options);
     auto subopt_brute = FoldBruteForce(r, *em, SUBOPT_BRUTE_MAX_STRUCTURES);
-    auto subopt_kekrna = ctx.SuboptimalSorted(-1, SUBOPT_BRUTE_MAX_STRUCTURES);
+    auto subopt_kekrna = ctx.SuboptimalIntoVector(true, -1, SUBOPT_BRUTE_MAX_STRUCTURES);
 
     AppendErrors(
         errors, MaybePrependHeader(CheckSuboptimalResult(subopt_brute, true), "brute suboptimal:"));
@@ -252,8 +252,9 @@ private:
     for (auto subopt_alg : context_options_t::SUBOPTIMAL_ALGS) {
       context_options_t options(context_options_t::TableAlg::TWO, subopt_alg);
       Context ctx(r, em, options);
-      kekrna_subopts_delta.push_back(ctx.SuboptimalSorted(SUBOPT_MAX_DELTA, -1));
-      kekrna_subopts_num.push_back(ctx.SuboptimalSorted(-1, SUBOPT_KEKRNA_MAX_STRUCTURES));
+      kekrna_subopts_delta.push_back(ctx.SuboptimalIntoVector(true, SUBOPT_MAX_DELTA, -1));
+      kekrna_subopts_num.push_back(
+          ctx.SuboptimalIntoVector(true, -1, SUBOPT_KEKRNA_MAX_STRUCTURES));
     }
 
     for (int i = 0; i < int(kekrna_subopts_delta.size()); ++i) {
@@ -280,7 +281,7 @@ private:
         context_options_t options(
             context_options_t::TableAlg::TWO, context_options_t::SuboptimalAlg::ONE);
         Context ctx(r, em, options);
-        auto kekrna_subopt = ctx.SuboptimalSorted(SUBOPT_MAX_DELTA, -1);
+        auto kekrna_subopt = ctx.SuboptimalIntoVector(true, SUBOPT_MAX_DELTA, -1);
         const auto rnastructure_subopt = rnastructure.Suboptimal(r, SUBOPT_MAX_DELTA);
         AppendErrors(errors,
             MaybePrependHeader(CheckSuboptimalResult(kekrna_subopt, true), "kekrna suboptimal:"));
