@@ -1,3 +1,17 @@
+// Copyright 2016, Eliot Courtney.
+//
+// This file is part of kekrna.
+//
+// kekrna is free software: you can redistribute it and/or modify it under the terms of the
+// GNU General Public License as published by the Free Software Foundation, either version 3 of
+// the License, or (at your option) any later version.
+//
+// kekrna is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even
+// the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License along with kekrna.
+// If not, see <http://www.gnu.org/licenses/>.
 #include <chrono>
 #include <cinttypes>
 #include <cstdio>
@@ -261,7 +275,8 @@ private:
       AppendErrors(errors, MaybePrependHeader(CheckSuboptimalResult(kekrna_subopts_delta[i], true),
           sfmt("kekrna delta suboptimal %d:", i)));
       AppendErrors(errors,
-          MaybePrependHeader(CheckSuboptimalResultPair(kekrna_subopts_delta[0], kekrna_subopts_delta[i]),
+          MaybePrependHeader(
+              CheckSuboptimalResultPair(kekrna_subopts_delta[0], kekrna_subopts_delta[i]),
               sfmt("kekrna 0 vs kekrna %d delta suboptimal:", i)));
     }
 
@@ -269,7 +284,8 @@ private:
       AppendErrors(errors, MaybePrependHeader(CheckSuboptimalResult(kekrna_subopts_num[i], true),
           sfmt("kekrna num suboptimal %d:", i)));
       AppendErrors(errors,
-          MaybePrependHeader(CheckSuboptimalResultPair(kekrna_subopts_num[0], kekrna_subopts_num[i]),
+          MaybePrependHeader(
+              CheckSuboptimalResultPair(kekrna_subopts_num[0], kekrna_subopts_num[i]),
               sfmt("kekrna 0 vs kekrna %d num suboptimal:", i)));
     }
 
