@@ -12,7 +12,7 @@
 //
 // You should have received a copy of the GNU General Public License along with kekrna.
 // If not, see <http://www.gnu.org/licenses/>.
-#include "fold/fold_internal.h"
+#include "fold/fold.h"
 
 namespace kekrna {
 namespace fold {
