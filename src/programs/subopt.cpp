@@ -30,7 +30,7 @@ int main(int argc, char* argv[]) {
       {"ctd-output", opt_t("if we should output CTD data")}
   });
   argparse.ParseOrExit(argc, argv);
-  const auto pos = argparse.GetPositional();
+  const auto& pos = argparse.GetPositional();
   verify_expr(pos.size() == 1, "need primary sequence to fold");
 
   auto opt = ContextOptionsFromArgParse(argparse);

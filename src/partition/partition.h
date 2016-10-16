@@ -20,11 +20,6 @@
 
 namespace kekrna {
 namespace partition {
-namespace internal {
-
-void Partition0();
-
-}
 
 enum {
   PT_P,
@@ -32,7 +27,17 @@ enum {
 };
 
 typedef double penergy_t;
-typedef array3d_t <penergy_t, PT_SIZE> partition_t;
+// TODO rename this probability or something
+typedef array3d_t<penergy_t, 1> partition_t;
+
+namespace internal {
+
+void Partition0();
+
+partition_t ComputeProbabilities();
+
+}
+
 
 }
 }

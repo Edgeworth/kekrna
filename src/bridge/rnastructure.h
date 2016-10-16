@@ -20,6 +20,7 @@
 
 #include "miles_rnastructure/include/algorithm.h"
 #include "miles_rnastructure/include/rna_library.h"
+#include "miles_rnastructure/include/pfunction.h"
 
 namespace kekrna {
 namespace bridge {
@@ -38,7 +39,8 @@ public:
       const primary_t& r, energy_t energy_delta) const override;
   virtual partition::partition_t Partition(const primary_t& r) const override;
 
-  computed_t FoldAndDpTable(const primary_t& r, dp_state_t* dp_state) const;
+  computed_t FoldAndDpTable(const primary_t& r, dp_state_t& dp_state) const;
+  partition::partition_t PartitionAndTable(const primary_t& r) const;  // TODO return table
 
 private:
   const std::unique_ptr<datatable> data;

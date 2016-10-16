@@ -120,6 +120,7 @@ int Context::Suboptimal(fold::SuboptimalCallback fn, bool sorted,
       verify_expr(false, "bug - no such suboptimal algorithm %d", int(options.suboptimal_alg));
   }
 }
+
 partition::partition_t Context::Partition() {
   partition::SetPartitionGlobalState(r, *em);
   switch (options.partition_alg) {
@@ -128,7 +129,7 @@ partition::partition_t Context::Partition() {
     case context_opt_t::PartitionAlg::BRUTE:
       verify_expr(false, "not implemented yet");  // TODO implement
   }
-  return std::move(partition::internal::gpt);
+  return partition::internal::ComputeProbabilities();
 }
 
 }

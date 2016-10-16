@@ -20,14 +20,14 @@ namespace kekrna {
 namespace partition {
 namespace internal {
 
-partition_t gpt;
+array3d_t<penergy_t, PT_SIZE> gpt;
 
 }
 
 void SetPartitionGlobalState(const primary_t& r, const energy::EnergyModel& em) {
   energy::SetEnergyGlobalState(r, em);
   // 0.0 is zero'd memory.
-  internal::gpt = partition_t(gr.size(), 0);  // TODO +1 on gr.size()?
+  internal::gpt = array3d_t<penergy_t, PT_SIZE>(gr.size(), 0);  // TODO +1 on gr.size()?
 }
 
 }

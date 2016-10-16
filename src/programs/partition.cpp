@@ -13,23 +13,33 @@
 // You should have received a copy of the GNU General Public License along with kekrna.
 // If not, see <http://www.gnu.org/licenses/>.
 #include <cstdio>
-#include "energy/load_model.h"
-#include "context.h"
+#include <algorithm>
+#include "bridge/rnastructure.h"
 #include "parsing.h"
 
 using namespace kekrna;
 
 int main(int argc, char* argv[]) {
-  ArgParse argparse(energy::ENERGY_OPTIONS);
-  argparse.AddOptions(CONTEXT_OPTIONS);
+  ArgParse argparse({{"cutoff", opt_t("Only return probabilities larger than this.").Arg("0.1")}});
   argparse.ParseOrExit(argc, argv);
   const auto& pos = argparse.GetPositional();
   verify_expr(pos.size() == 1, "need primary sequence to fold");
+  const auto primary = parsing::StringToPrimary(pos.front());
+  const auto cutoff = atof(argparse.GetOption("cutoff").c_str());
+  const bridge::Rnastructure rnastructure("extern/miles_rnastructure/data_tables/", false);
+  auto probs = rnastructure.Partition(primary);
 
-  Context ctx(parsing::StringToPrimary(pos.front()),
-      energy::LoadEnergyModelFromArgParse(argparse), ContextOptionsFromArgParse(argparse));
-  const auto computed = ctx.Fold();
-
-  printf("Energy: %d\n%s\n%s\n", computed.energy, parsing::PairsToDotBracket(computed.s.p).c_str(),
-      parsing::ComputedToCtdString(computed).c_str());
+  std::vector<std::tuple<double, int, int>> pairs;
+  for (int i = 0; i < int(primary.size()); ++i) {
+    for (int j = 0; j < int(primary.size()); ++j)
+      if (probs[i][j][0] >= cutoff)
+        pairs.emplace_back(probs[i][j][0], i, j);
+  }
+  std::sort(pairs.rbegin(), pairs.rend());
+  for (const auto& pair : pairs) {
+    int st, en;
+    double prob;
+    std::tie(prob, st, en) = pair;
+    printf("%d %d: %.4lf %.4lf\n", st, en, prob, -log10(prob));
+  }
 }
