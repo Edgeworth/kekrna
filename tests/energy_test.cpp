@@ -14,8 +14,7 @@
 // If not, see <http://www.gnu.org/licenses/>.
 #include "gtest/gtest.h"
 #include "common_test.h"
-#include "fold/context.h"
-#include "fold/globals.h"
+#include "context.h"
 #include "parsing.h"
 
 namespace kekrna {
@@ -76,24 +75,24 @@ TEST_F(EnergyTest, NNDBHairpinLoopExamples) {
       g_em->HairpinInitiation(5) + g_em->hairpin_special_gu_closure,
       GetEnergy(kNNDBHairpin5));
 
-  fold::internal::SetGlobalState(kNNDBHairpin1.r, *g_em);
+  fold::internal::SetFoldGlobalState(kNNDBHairpin1.r, *g_em);
   EXPECT_EQ(g_em->augu_penalty + g_em->terminal[A][A][A][U] + g_em->HairpinInitiation(6),
       fold::internal::FastHairpin(3, 10));
 
-  fold::internal::SetGlobalState(kNNDBHairpin2.r, *g_em);
+  fold::internal::SetFoldGlobalState(kNNDBHairpin2.r, *g_em);
   EXPECT_EQ(g_em->augu_penalty + g_em->terminal[A][G][G][U] + g_em->hairpin_gg_first_mismatch +
       g_em->HairpinInitiation(5),
       fold::internal::FastHairpin(3, 9));
 
-  fold::internal::SetGlobalState(kNNDBHairpin3.r, *g_em);
+  fold::internal::SetFoldGlobalState(kNNDBHairpin3.r, *g_em);
   EXPECT_EQ(g_em->hairpin["CCGAGG"], fold::internal::FastHairpin(3, 8));
 
-  fold::internal::SetGlobalState(kNNDBHairpin4.r, *g_em);
+  fold::internal::SetFoldGlobalState(kNNDBHairpin4.r, *g_em);
   EXPECT_EQ(g_em->augu_penalty + g_em->terminal[A][C][C][U] + g_em->HairpinInitiation(6) +
       g_em->hairpin_all_c_a * 6 + g_em->hairpin_all_c_b,
       fold::internal::FastHairpin(3, 10));
 
-  fold::internal::SetGlobalState(kNNDBHairpin5.r, *g_em);
+  fold::internal::SetFoldGlobalState(kNNDBHairpin5.r, *g_em);
   EXPECT_EQ(g_em->augu_penalty + g_em->terminal[G][G][G][U] + g_em->hairpin_gg_first_mismatch +
       g_em->HairpinInitiation(5) + g_em->hairpin_special_gu_closure,
       fold::internal::FastHairpin(3, 9));

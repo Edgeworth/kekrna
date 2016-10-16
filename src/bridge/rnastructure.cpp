@@ -124,5 +124,9 @@ std::vector<computed_t> Rnastructure::SuboptimalIntoVector(
         energy_t(structure->GetEnergy(i + 1)));
   return computeds;
 }
+partition::partition_t Rnastructure::Partition(const primary_t& r) const {
+  // TODO
+  return kekrna::partition::partition_t();
+}
 }
 }

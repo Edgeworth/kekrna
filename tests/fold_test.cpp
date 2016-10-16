@@ -14,17 +14,16 @@
 // If not, see <http://www.gnu.org/licenses/>.
 #include <cstdlib>
 #include "common_test.h"
-#include "fold/context.h"
-#include "fold/precomp.h"
+#include "context.h"
 #include "parsing.h"
 
 namespace kekrna {
 namespace fold {
 
-class FoldAlgTest : public testing::TestWithParam<fold::context_options_t::TableAlg> {
+class FoldAlgTest : public testing::TestWithParam<context_opt_t::TableAlg> {
 public:
   energy_t FoldEnergy(const std::string& s) {
-    return Context(parsing::StringToPrimary(s), g_em, fold::context_options_t(GetParam()))
+    return Context(parsing::StringToPrimary(s), g_em, context_opt_t(GetParam()))
         .Fold()
         .energy;
   }
@@ -70,7 +69,7 @@ TEST_P(FoldAlgTest, T04) {
 }
 
 INSTANTIATE_TEST_CASE_P(
-    FoldAlgTest, FoldAlgTest, testing::ValuesIn(fold::context_options_t::TABLE_ALGS));
+    FoldAlgTest, FoldAlgTest, testing::ValuesIn(context_opt_t::TABLE_ALGS));
 
 TEST(FoldTest, Precomp) {
   ONLY_FOR_THIS_MODEL(g_em, T04_MODEL_HASH);

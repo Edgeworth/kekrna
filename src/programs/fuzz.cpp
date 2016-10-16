@@ -23,7 +23,6 @@
 #include "energy/load_model.h"
 #include "energy/structure.h"
 #include "fold/brute_fold.h"
-#include "fold/globals.h"
 #include "parsing.h"
 
 using namespace kekrna;
@@ -207,8 +206,8 @@ private:
     // Kekrna.
     std::vector<energy_t> kekrna_ctd_efns;
     std::vector<energy_t> kekrna_optimal_efns;
-    for (auto table_alg : context_options_t::TABLE_ALGS) {
-      Context ctx(r, em, context_options_t(table_alg));
+    for (auto table_alg : context_opt_t::TABLE_ALGS) {
+      Context ctx(r, em, context_opt_t(table_alg));
       auto computed = ctx.Fold();
       kekrna_dps.emplace_back(std::move(gdp));
       // First compute with the CTDs that fold returned to check the energy.
@@ -245,8 +244,8 @@ private:
 
   error_t CheckBruteForce() {
     error_t errors;
-    context_options_t options(
-        context_options_t::TableAlg::TWO, context_options_t::SuboptimalAlg::ZERO);
+    context_opt_t options(
+        context_opt_t::TableAlg::TWO, context_opt_t::SuboptimalAlg::ZERO);
     Context ctx(r, em, options);
     auto subopt_brute = FoldBruteForce(r, *em, SUBOPT_BRUTE_MAX_STRUCTURES);
     auto subopt_kekrna = ctx.SuboptimalIntoVector(true, -1, SUBOPT_BRUTE_MAX_STRUCTURES);
@@ -263,8 +262,8 @@ private:
   error_t CheckSuboptimal() {
     error_t errors;
     std::vector<std::vector<computed_t>> kekrna_subopts_delta, kekrna_subopts_num;
-    for (auto subopt_alg : context_options_t::SUBOPTIMAL_ALGS) {
-      context_options_t options(context_options_t::TableAlg::TWO, subopt_alg);
+    for (auto subopt_alg : context_opt_t::SUBOPTIMAL_ALGS) {
+      context_opt_t options(context_opt_t::TableAlg::TWO, subopt_alg);
       Context ctx(r, em, options);
       kekrna_subopts_delta.push_back(ctx.SuboptimalIntoVector(true, SUBOPT_MAX_DELTA, -1));
       kekrna_subopts_num.push_back(ctx.SuboptimalIntoVector(true, -1, max_structures));
@@ -293,8 +292,8 @@ private:
       // strange things
       // when the energy for suboptimal structures is 0 or above.
       if (kekrna_computeds[0].energy < -SUBOPT_MAX_DELTA) {
-        context_options_t options(
-            context_options_t::TableAlg::TWO, context_options_t::SuboptimalAlg::ONE);
+        context_opt_t options(
+            context_opt_t::TableAlg::TWO, context_opt_t::SuboptimalAlg::ONE);
         Context ctx(r, em, options);
         auto kekrna_subopt = ctx.SuboptimalIntoVector(true, SUBOPT_MAX_DELTA, -1);
         const auto rnastructure_subopt = rnastructure.SuboptimalIntoVector(r, SUBOPT_MAX_DELTA);
@@ -315,15 +314,14 @@ private:
 int main(int argc, char* argv[]) {
   std::mt19937 eng(uint_fast32_t(time(nullptr)));
   ArgParse argparse({{"print-interval",
-      ArgParse::option_t("status update every n seconds").Arg("-1")},
-      {"random",
-          ArgParse::option_t("use random energy models (disables comparison to RNAstructure)")},
-      {"no-subopt", ArgParse::option_t("do not test suboptimal folding")},
-      {"subopt-rnastructure", ArgParse::option_t("test rnastructure suboptimal folding")},
-      {"subopt-max-structures", ArgParse::option_t(
+      opt_t("status update every n seconds").Arg("-1")},
+      {"random", opt_t("use random energy models (disables comparison to RNAstructure)")},
+      {"no-subopt", opt_t("do not test suboptimal folding")},
+      {"subopt-rnastructure", opt_t("test rnastructure suboptimal folding")},
+      {"subopt-max-structures", opt_t(
           "maximum number of substructures for max-delta fuzz").Arg("5000")},
-      {"afl", ArgParse::option_t("reads one rna from stdin and fuzzes - useful for use with afl")},
-      {"brute-cutoff", ArgParse::option_t("maximum rna size to run brute force on").Arg("25")}
+      {"afl", opt_t("reads one rna from stdin and fuzzes - useful for use with afl")},
+      {"brute-cutoff", opt_t("maximum rna size to run brute force on").Arg("25")}
   });
   argparse.AddOptions(energy::ENERGY_OPTIONS);
   argparse.ParseOrExit(argc, argv);

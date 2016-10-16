@@ -12,23 +12,16 @@
 //
 // You should have received a copy of the GNU General Public License along with kekrna.
 // If not, see <http://www.gnu.org/licenses/>.
-#ifndef KEKRNA_LOAD_MODEL_H
-#define KEKRNA_LOAD_MODEL_H
-
-#include "common.h"
-#include "energy/energy_model.h"
+#include "globals.h"
 
 namespace kekrna {
-namespace energy {
 
-const std::map<std::string, opt_t> ENERGY_OPTIONS = {
-    {"seed", opt_t("seed for random energy model for kekrna").Arg()},
-    {"data-path", opt_t("data path for given energy model for kekrna").Arg("data/")}};
+primary_t gr;
+energy::EnergyModel gem;
 
-EnergyModelPtr LoadEnergyModelFromDataDir(const std::string& data_dir);
-EnergyModelPtr LoadRandomEnergyModel(uint_fast32_t seed);
-EnergyModelPtr LoadEnergyModelFromArgParse(const ArgParse& argparse);
-}
+void SetGlobalState(const kekrna::primary_t& r, const kekrna::energy::EnergyModel& em) {
+  gr = r;
+  gem = em;
 }
 
-#endif  // KEKRNA_LOAD_MODEL_H
+}

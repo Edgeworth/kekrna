@@ -13,7 +13,8 @@
 // You should have received a copy of the GNU General Public License along with kekrna.
 // If not, see <http://www.gnu.org/licenses/>.
 #include "precomp.h"
-#include "fold/globals.h"
+#include "globals.h"
+#include "fold/fold_globals.h"
 #include "parsing.h"
 
 namespace kekrna {

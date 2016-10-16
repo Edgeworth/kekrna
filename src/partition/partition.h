@@ -12,23 +12,29 @@
 //
 // You should have received a copy of the GNU General Public License along with kekrna.
 // If not, see <http://www.gnu.org/licenses/>.
-#ifndef KEKRNA_LOAD_MODEL_H
-#define KEKRNA_LOAD_MODEL_H
+#ifndef KEKRNA_PARTITION_H
+#define KEKRNA_PARTITION_H
 
 #include "common.h"
-#include "energy/energy_model.h"
+#include "array.h"
 
 namespace kekrna {
-namespace energy {
+namespace partition {
+namespace internal {
 
-const std::map<std::string, opt_t> ENERGY_OPTIONS = {
-    {"seed", opt_t("seed for random energy model for kekrna").Arg()},
-    {"data-path", opt_t("data path for given energy model for kekrna").Arg("data/")}};
+void Partition0();
 
-EnergyModelPtr LoadEnergyModelFromDataDir(const std::string& data_dir);
-EnergyModelPtr LoadRandomEnergyModel(uint_fast32_t seed);
-EnergyModelPtr LoadEnergyModelFromArgParse(const ArgParse& argparse);
+}
+
+enum {
+  PT_P,
+  PT_SIZE
+};
+
+typedef double penergy_t;
+typedef array3d_t<penergy_t, PT_SIZE> partition_t;
+
 }
 }
 
-#endif  // KEKRNA_LOAD_MODEL_H
+#endif  // KEKRNA_PARTITION_H

@@ -28,7 +28,7 @@ std::unique_ptr<RnaPackage> RnaPackageFromArgParse(const ArgParse& argparse) {
         new Rnastructure("extern/miles_rnastructure/data_tables/", false));
   } else {
     return std::unique_ptr<RnaPackage>(new Kekrna(
-        energy::LoadEnergyModelFromArgParse(argparse), fold::ContextOptionsFromArgParse(argparse)));
+        energy::LoadEnergyModelFromArgParse(argparse), ContextOptionsFromArgParse(argparse)));
   }
 }
 }

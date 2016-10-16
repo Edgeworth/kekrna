@@ -17,7 +17,8 @@
 
 #include "base.h"
 #include "common.h"
-#include "fold/globals.h"
+#include "globals.h"
+#include "fold/fold_globals.h"
 
 namespace kekrna {
 namespace fold {

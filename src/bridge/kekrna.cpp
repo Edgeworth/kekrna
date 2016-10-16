@@ -34,16 +34,21 @@ energy_t Kekrna::Efn(const secondary_t& secondary, std::string* desc) const {
   return computed.energy;
 }
 
-computed_t Kekrna::Fold(const primary_t& r) const { return fold::Context(r, em, options).Fold(); }
+computed_t Kekrna::Fold(const primary_t& r) const { return Context(r, em, options).Fold(); }
 
 int Kekrna::Suboptimal(fold::SuboptimalCallback fn,
     const primary_t& r, energy_t energy_delta) const {
-  return fold::Context(r, em, options).Suboptimal(fn, true, energy_delta, -1);
+  return Context(r, em, options).Suboptimal(fn, true, energy_delta, -1);
 }
 
 std::vector<computed_t>
 Kekrna::SuboptimalIntoVector(const primary_t& r, energy_t energy_delta) const {
-  return fold::Context(r, em, options).SuboptimalIntoVector(true, energy_delta, -1);
+  return Context(r, em, options).SuboptimalIntoVector(true, energy_delta, -1);
 }
+
+partition::partition_t Kekrna::Partition(const primary_t& r) const {
+  return Context(r, em, options).Partition();
+}
+
 }
 }

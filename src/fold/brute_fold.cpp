@@ -200,7 +200,7 @@ void FoldBruteForceInternal(int idx) {
 
 std::vector<computed_t> FoldBruteForce(
     const primary_t& r, const energy::EnergyModel& em, int max_structures_) {
-  internal::SetGlobalState(r, em);
+  internal::SetFoldGlobalState(r, em);
   best_computeds.clear();
   base_pairs.clear();
   max_structures = max_structures_;

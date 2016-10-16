@@ -12,23 +12,33 @@
 //
 // You should have received a copy of the GNU General Public License along with kekrna.
 // If not, see <http://www.gnu.org/licenses/>.
-#ifndef KEKRNA_LOAD_MODEL_H
-#define KEKRNA_LOAD_MODEL_H
-
-#include "common.h"
-#include "energy/energy_model.h"
+#include "globals.h"
+#include "fold/fold_globals.h"
 
 namespace kekrna {
-namespace energy {
+namespace fold {
+namespace internal {
 
-const std::map<std::string, opt_t> ENERGY_OPTIONS = {
-    {"seed", opt_t("seed for random energy model for kekrna").Arg()},
-    {"data-path", opt_t("data path for given energy model for kekrna").Arg("data/")}};
+std::vector<int> gp;
+std::vector<Ctd> gctd;
+std::string grep;
+precomp_t gpc;
+energy_t genergy;
+array3d_t<energy_t, DP_SIZE> gdp;
+array2d_t<energy_t, EXT_SIZE> gext;
 
-EnergyModelPtr LoadEnergyModelFromDataDir(const std::string& data_dir);
-EnergyModelPtr LoadRandomEnergyModel(uint_fast32_t seed);
-EnergyModelPtr LoadEnergyModelFromArgParse(const ArgParse& argparse);
+void SetFoldGlobalState(const primary_t& r, const energy::EnergyModel& em) {
+  SetGlobalState(r, em);
+  gp.resize(gr.size());
+  gctd.resize(gr.size());
+  genergy = MAX_E;
+  gpc = PrecomputeData(gr, gem);
+  std::fill(gp.begin(), gp.end(), -1);
+  std::fill(gctd.begin(), gctd.end(), CTD_NA);
+  gdp = array3d_t<energy_t, DP_SIZE>(gr.size() + 1);
+  gext = array2d_t<energy_t, EXT_SIZE>(gr.size() + 1);
+}
+
 }
 }
-
-#endif  // KEKRNA_LOAD_MODEL_H
+}
