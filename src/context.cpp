@@ -13,6 +13,7 @@
 // You should have received a copy of the GNU General Public License along with kekrna.
 // If not, see <http://www.gnu.org/licenses/>.
 #include "context.h"
+#include "partition/partition_globals.h"
 #include "fold/brute_fold.h"
 #include "fold/suboptimal0.h"
 #include "fold/suboptimal1.h"
@@ -24,7 +25,7 @@ constexpr context_opt_t::SuboptimalAlg context_opt_t::SUBOPTIMAL_ALGS[];
 
 context_opt_t ContextOptionsFromArgParse(const ArgParse& argparse) {
   context_opt_t options;
-  auto dp_alg = argparse.GetOption("dp-alg");
+  const auto dp_alg = argparse.GetOption("dp-alg");
   if (dp_alg == "0") {
     options.table_alg = context_opt_t::TableAlg::ZERO;
   } else if (dp_alg == "1") {
@@ -38,7 +39,7 @@ context_opt_t ContextOptionsFromArgParse(const ArgParse& argparse) {
   } else {
     verify_expr(false, "unknown fold option");
   }
-  auto subopt_alg = argparse.GetOption("subopt-alg");
+  const auto subopt_alg = argparse.GetOption("subopt-alg");
   if (subopt_alg == "0") {
     options.suboptimal_alg = context_opt_t::SuboptimalAlg::ZERO;
   } else if (subopt_alg == "1") {
@@ -46,7 +47,15 @@ context_opt_t ContextOptionsFromArgParse(const ArgParse& argparse) {
   } else if (subopt_alg == "brute") {
     options.suboptimal_alg = context_opt_t::SuboptimalAlg::BRUTE;
   } else {
-    verify_expr(false, "unknown fold option");
+    verify_expr(false, "unknown suboptimal option");
+  }
+  const auto part_alg = argparse.GetOption("part-alg");
+  if (part_alg == "0") {
+    options.partition_alg = context_opt_t::PartitionAlg::ZERO;
+  } else if (part_alg == "brute") {
+    options.partition_alg = context_opt_t::PartitionAlg::BRUTE;
+  } else {
+    verify_expr(false, "unknown partition option");
   }
   return options;
 }
@@ -112,8 +121,14 @@ int Context::Suboptimal(fold::SuboptimalCallback fn, bool sorted,
   }
 }
 partition::partition_t Context::Partition() {
-  // TODO
-  return kekrna::partition::partition_t();
+  partition::internal::SetPartitionGlobalState(r, *em);
+  switch (options.partition_alg) {
+    case context_opt_t::PartitionAlg::ZERO:
+      partition::internal::Partition0();
+    case context_opt_t::PartitionAlg::BRUTE:
+      verify_expr(false, "not implemented yet");  // TODO implement
+  }
+  return std::move(partition::internal::gpt);
 }
 
 }

@@ -48,7 +48,7 @@ set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -march=native -O3")
 
 # Source set definitions.
 file(GLOB KEKRNA_SOURCE "src/*.cpp" "src/*.h" "src/energy/*.cpp"
-    "src/energy/*.h" "src/fold/*.cpp" "src/fold/*.h")
+    "src/energy/*.h" "src/fold/*.cpp" "src/fold/*.h" "src/partition/*.h" "src/partition/*.cpp")
 file(GLOB BRIDGE_SOURCE "src/bridge/*.cpp" "src/bridge/*.h")
 file(GLOB TEST_SOURCE "tests/*.cpp" "tests/*.h")
 

@@ -12,3 +12,21 @@
 //
 // You should have received a copy of the GNU General Public License along with kekrna.
 // If not, see <http://www.gnu.org/licenses/>.
+#include "partition/partition_globals.h"
+#include "globals.h"
+
+namespace kekrna {
+namespace partition {
+namespace internal {
+
+partition_t gpt;
+
+void SetPartitionGlobalState(const primary_t& r, const energy::EnergyModel& em) {
+  SetGlobalState(r, em);
+  // 0.0 is zero'd memory.
+  gpt = partition_t(gr.size(), 0);  // TODO +1 on gr.size()?
+}
+
+}
+}
+}

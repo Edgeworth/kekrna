@@ -15,6 +15,7 @@
 
 namespace kekrna {
 namespace partition {
+namespace internal {
 
 void Partition0() {
   /*const int N = int(gr.size());
@@ -163,7 +164,8 @@ void Partition0() {
       gdp[st][en][DP_U_RCOAX] = rcoax_min;
     }
   }*/
-};
+}
 
+}
 }
 }

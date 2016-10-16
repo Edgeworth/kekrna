@@ -15,11 +15,17 @@
 #ifndef KEKRNA_PARTITION_GLOBALS_H
 #define KEKRNA_PARTITION_GLOBALS_H
 
+#include "common.h"
+#include "energy/energy_model.h"
+#include "partition/partition.h"
+
 namespace kekrna {
 namespace partition {
 namespace internal {
 
+extern partition_t gpt;
 
+void SetPartitionGlobalState(const primary_t& r, const energy::EnergyModel& em);
 
 }
 }
