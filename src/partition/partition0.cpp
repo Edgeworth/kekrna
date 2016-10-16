@@ -27,7 +27,7 @@ void Partition0() {
           en1b = gr[en - 1], en2b = gr[en - 2];
 
       // Update paired - only if can actually pair.
-      if (ViableFoldingPair(st, en)) {
+      if (fold::ViableFoldingPair(st, en)) {
         energy_t p_min = MAX_E;
         const int max_inter = std::min(TWOLOOP_MAX_SZ, en - st - HAIRPIN_MIN_SZ - 3);
         for (int ist = st + 1; ist < st + max_inter + 2; ++ist) {

@@ -12,13 +12,16 @@
 //
 // You should have received a copy of the GNU General Public License along with kekrna.
 // If not, see <http://www.gnu.org/licenses/>.
-#include <stack>
 #include <algorithm>
 #include "fold/suboptimal1.h"
+#include "energy/energy_globals.h"
 
 namespace kekrna {
 namespace fold {
 namespace internal {
+
+using energy::gem;
+using energy::gpc;
 
 int Suboptimal1::Run(SuboptimalCallback fn, bool sorted) {
   memset(gp.data(), -1, gp.size());
@@ -255,13 +258,13 @@ std::vector<expand_t> GenerateExpansions(const index_t& to_expand, energy_t delt
     int max_inter = std::min(TWOLOOP_MAX_SZ, en - st - HAIRPIN_MIN_SZ - 3);
     for (int ist = st + 1; ist < st + max_inter + 2; ++ist) {
       for (int ien = en - max_inter + ist - st - 2; ien < en; ++ien) {
-        energy = FastTwoLoop(st, en, ist, ien) + gdp[ist][ien][DP_P] - gdp[st][en][a];
+        energy = energy::FastTwoLoop(st, en, ist, ien) + gdp[ist][ien][DP_P] - gdp[st][en][a];
         if (energy <= delta) exps.push_back({energy, {ist, ien, DP_P}});
       }
     }
 
     // Hairpin loop
-    energy = FastHairpin(st, en) - gdp[st][en][a];
+    energy = energy::FastHairpin(st, en) - gdp[st][en][a];
     if (energy <= delta) exps.push_back({energy});
 
     auto base_and_branch = gpc.augubranch[stb][enb] + gem.multiloop_hack_a - gdp[st][en][a];

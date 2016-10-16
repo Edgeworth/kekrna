@@ -16,14 +16,11 @@
 #define KEKRNA_GLOBALS_H
 
 #include "common.h"
-#include "energy/energy_model.h"
 
 namespace kekrna {
 
 extern primary_t gr;
-extern energy::EnergyModel gem;
-
-void SetGlobalState(const primary_t& r, const energy::EnergyModel& em);
+void SetGlobalState(const primary_t& r);
 
 }
 

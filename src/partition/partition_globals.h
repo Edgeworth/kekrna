@@ -25,9 +25,10 @@ namespace internal {
 
 extern partition_t gpt;
 
+}
+
 void SetPartitionGlobalState(const primary_t& r, const energy::EnergyModel& em);
 
-}
 }
 }
 

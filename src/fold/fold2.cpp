@@ -13,6 +13,7 @@
 // You should have received a copy of the GNU General Public License along with kekrna.
 // If not, see <http://www.gnu.org/licenses/>.
 #include "fold/fold.h"
+#include "energy/energy_globals.h"
 
 namespace kekrna {
 namespace fold {
@@ -151,8 +152,8 @@ void ComputeTables2() {
       // In general, the idea is to see if there exists something we could replace a structure with
       // that is as good.
       // e.g. we could replace a (   )3' with the equivalent U since we know the energy for (   )3'
-      // that is, it is self contained. If replacing it with U[st][en] is better, then we do not 
-      // need to consider (...)3' when computing a larger U. In some cases we use the minimum possible 
+      // that is, it is self contained. If replacing it with U[st][en] is better, then we do not
+      // need to consider (...)3' when computing a larger U. In some cases we use the minimum possible
       // energy if we don't know the energy exactly for a structure (e.g. RCOAX).
       // These orderings are useful to remember:
       // U <= U_WC, U_GU, U2

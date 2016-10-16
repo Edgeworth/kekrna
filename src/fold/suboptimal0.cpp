@@ -13,6 +13,7 @@
 // You should have received a copy of the GNU General Public License along with kekrna.
 // If not, see <http://www.gnu.org/licenses/>.
 #include "fold/suboptimal0.h"
+#include "energy/energy_globals.h"
 
 namespace kekrna {
 namespace fold {

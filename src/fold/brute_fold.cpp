@@ -18,6 +18,7 @@
 #include "energy/structure.h"
 #include "fold/fold.h"
 #include "parsing.h"
+#include "energy/energy_globals.h"
 
 namespace kekrna {
 namespace fold {
@@ -69,7 +70,7 @@ int max_structures;
 void AddAllCombinations(int idx) {
   // Base case
   if (idx == int(gr.size())) {
-    auto computed = energy::ComputeEnergyWithCtds({{gr, gp}, gctd, 0}, gem);
+    auto computed = energy::ComputeEnergyWithCtds({{gr, gp}, gctd, 0}, energy::gem);
     if (int(best_computeds.size()) < max_structures ||
         best_computeds.rbegin()->energy > computed.energy)
       best_computeds.insert(std::move(computed));
@@ -161,7 +162,7 @@ void FoldBruteForceInternal(int idx) {
   if (idx == int(base_pairs.size())) {
     // Small optimisation for case when we're just getting one structure.
     if (max_structures == 1) {
-      auto computed = energy::ComputeEnergy({gr, gp}, gem);
+      auto computed = energy::ComputeEnergy({gr, gp}, energy::gem);
       if (best_computeds.empty() || computed.energy < best_computeds.begin()->energy)
         best_computeds.insert(std::move(computed));
       if (best_computeds.size() == 2) best_computeds.erase(--best_computeds.end());
@@ -200,14 +201,14 @@ void FoldBruteForceInternal(int idx) {
 
 std::vector<computed_t> FoldBruteForce(
     const primary_t& r, const energy::EnergyModel& em, int max_structures_) {
-  internal::SetFoldGlobalState(r, em);
+  SetFoldGlobalState(r, em);
   best_computeds.clear();
   base_pairs.clear();
   max_structures = max_structures_;
   // Add base pairs in order of increasing st, then en.
   for (int st = 0; st < int(r.size()); ++st) {
     for (int en = st + HAIRPIN_MIN_SZ + 1; en < int(r.size()); ++en) {
-      if (internal::ViableFoldingPair(st, en)) base_pairs.emplace_back(st, en);
+      if (energy::ViableFoldingPair(st, en)) base_pairs.emplace_back(st, en);
     }
   }
   FoldBruteForceInternal(0);

@@ -32,7 +32,7 @@ enum {
 };
 
 typedef double penergy_t;
-typedef array3d_t<penergy_t, PT_SIZE> partition_t;
+typedef array3d_t <penergy_t, PT_SIZE> partition_t;
 
 }
 }

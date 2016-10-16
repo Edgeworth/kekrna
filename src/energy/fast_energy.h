@@ -12,15 +12,21 @@
 //
 // You should have received a copy of the GNU General Public License along with kekrna.
 // If not, see <http://www.gnu.org/licenses/>.
-#ifndef KEKRNA_PRECOMP_H
-#define KEKRNA_PRECOMP_H
+#ifndef KEKRNA_FAST_ENERGY_H
+#define KEKRNA_FAST_ENERGY_H
 
 #include "common.h"
+#include "globals.h"
 #include "energy/energy_model.h"
 
 namespace kekrna {
-namespace fold {
+namespace energy {
+
 namespace internal {
+
+int MaxNumContiguous(const primary_t& r);
+
+}
 
 struct hairpin_precomp_t {
   static const int MAX_SPECIAL_HAIRPIN_SZ = 6;
@@ -39,13 +45,18 @@ struct precomp_t {
   std::vector<hairpin_precomp_t> hairpin;
 };
 
-int MaxNumContiguous(const primary_t& r);
-precomp_t PrecomputeData(const primary_t& r, const energy::EnergyModel& em);
+precomp_t PrecomputeData(const primary_t& r, const EnergyModel& em);
+
 // Must have global state set.
 energy_t FastTwoLoop(int ost, int oen, int ist, int ien);
 energy_t FastHairpin(int st, int en);
+inline bool ViableFoldingPair(int st, int en) {
+  return CanPair(gr[st], gr[en]) &&
+      ((en - st - 3 >= HAIRPIN_MIN_SZ && CanPair(gr[st + 1], gr[en - 1])) ||
+          (st > 0 && en < int(gr.size() - 1) && CanPair(gr[st - 1], gr[en + 1])));
 }
+
 }
 }
 
-#endif  // KEKRNA_PRECOMP_H
+#endif  // KEKRNA_FAST_ENERGY_H

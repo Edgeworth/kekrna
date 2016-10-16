@@ -60,7 +60,7 @@ class SplayMapRandomTest : public testing::TestWithParam<int_fast32_t> {
 };
 
 TEST_P(SplayMapRandomTest, CompareAgainstMap) {
-  const int NUM_TRIES = 10000;
+  const int NUM_TRIES = 5000;
   std::mt19937 eng(GetParam());
   SplayMap<int, int> h;
   std::set<int> s;
@@ -123,6 +123,6 @@ TEST_P(SplayMapRandomTest, CompareAgainstMap) {
 }
 
 INSTANTIATE_TEST_CASE_P(SplayMapRandomTest, SplayMapRandomTest,
-    testing::Range(int_fast32_t(0), int_fast32_t(10)));
+    testing::Range(int_fast32_t(0), int_fast32_t(5)));
 
 }

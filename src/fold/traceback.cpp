@@ -14,6 +14,7 @@
 // If not, see <http://www.gnu.org/licenses/>.
 #include <stack>
 #include "fold/fold.h"
+#include "energy/energy_globals.h"
 
 namespace kekrna {
 namespace fold {

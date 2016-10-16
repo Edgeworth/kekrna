@@ -34,7 +34,7 @@ public:
   virtual computed_t Fold(const primary_t& r) const override;
   virtual int Suboptimal(fold::SuboptimalCallback fn,
       const primary_t& r, energy_t energy_delta) const override;
-  virtual std::vector<computed_t>  SuboptimalIntoVector(
+  virtual std::vector<computed_t> SuboptimalIntoVector(
       const primary_t& r, energy_t energy_delta) const override;
   virtual partition::partition_t Partition(const primary_t& r) const override;
 

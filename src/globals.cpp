@@ -17,11 +17,9 @@
 namespace kekrna {
 
 primary_t gr;
-energy::EnergyModel gem;
 
-void SetGlobalState(const kekrna::primary_t& r, const kekrna::energy::EnergyModel& em) {
+void SetGlobalState(const kekrna::primary_t& r) {
   gr = r;
-  gem = em;
 }
 
 }

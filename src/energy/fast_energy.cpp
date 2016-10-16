@@ -12,16 +12,12 @@
 //
 // You should have received a copy of the GNU General Public License along with kekrna.
 // If not, see <http://www.gnu.org/licenses/>.
-#include "precomp.h"
-#include "globals.h"
-#include "fold/fold_globals.h"
+#include "energy/fast_energy.h"
 #include "parsing.h"
+#include "energy/energy_globals.h"
 
 namespace kekrna {
-namespace fold {
-namespace internal {
-
-using namespace energy;
+namespace energy {
 
 namespace {
 
@@ -31,7 +27,9 @@ energy_t MinEnergy(const energy_t* energy, std::size_t size) {
     min = std::min(min, energy[i]);
   return min;
 }
+
 }
+namespace internal {
 
 int MaxNumContiguous(const primary_t& r) {
   energy_t num_contig = 0;
@@ -46,6 +44,8 @@ int MaxNumContiguous(const primary_t& r) {
     max_num_contig = std::max(max_num_contig, num_contig);
   }
   return max_num_contig;
+}
+
 }
 
 precomp_t PrecomputeData(const primary_t& r, const energy::EnergyModel& em) {
@@ -83,7 +83,7 @@ precomp_t PrecomputeData(const primary_t& r, const energy::EnergyModel& em) {
   const auto min_bulge_init =
       MinEnergy(&em.bulge_init[1], sizeof(em.bulge_init) - sizeof(em.bulge_init[0]));
 
-  energy_t states_bonus = -energy_t(round(10.0 * R * T * log(MaxNumContiguous(r))));
+  energy_t states_bonus = -energy_t(round(10.0 * R * T * log(internal::MaxNumContiguous(r))));
   energy_t min_bulge = min_bulge_init + std::min(2 * em.augu_penalty, 0) + min_stack +
       std::min(em.bulge_special_c, 0) + states_bonus;
   pc.min_twoloop_not_stack = std::min(min_bulge, min_internal);
@@ -145,7 +145,7 @@ energy_t FastTwoLoop(int ost, int oen, int ist, int ien) {
 energy_t FastHairpin(int st, int en) {
   int length = en - st - 1;
   assert(length >= HAIRPIN_MIN_SZ);
-  if (length <= internal::hairpin_precomp_t::MAX_SPECIAL_HAIRPIN_SZ &&
+  if (length <= hairpin_precomp_t::MAX_SPECIAL_HAIRPIN_SZ &&
       gpc.hairpin[st].special[length] != MAX_E)
     return gpc.hairpin[st].special[length];
   base_t stb = gr[st], st1b = gr[st + 1], en1b = gr[en - 1], enb = gr[en];
@@ -168,6 +168,6 @@ energy_t FastHairpin(int st, int en) {
 
   return energy;
 }
-}
+
 }
 }

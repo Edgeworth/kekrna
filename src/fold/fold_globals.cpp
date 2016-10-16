@@ -14,6 +14,7 @@
 // If not, see <http://www.gnu.org/licenses/>.
 #include "globals.h"
 #include "fold/fold_globals.h"
+#include "energy/energy_globals.h"
 
 namespace kekrna {
 namespace fold {
@@ -22,23 +23,22 @@ namespace internal {
 std::vector<int> gp;
 std::vector<Ctd> gctd;
 std::string grep;
-precomp_t gpc;
 energy_t genergy;
 array3d_t<energy_t, DP_SIZE> gdp;
 array2d_t<energy_t, EXT_SIZE> gext;
 
-void SetFoldGlobalState(const primary_t& r, const energy::EnergyModel& em) {
-  SetGlobalState(r, em);
-  gp.resize(gr.size());
-  gctd.resize(gr.size());
-  genergy = MAX_E;
-  gpc = PrecomputeData(gr, gem);
-  std::fill(gp.begin(), gp.end(), -1);
-  std::fill(gctd.begin(), gctd.end(), CTD_NA);
-  gdp = array3d_t<energy_t, DP_SIZE>(gr.size() + 1);
-  gext = array2d_t<energy_t, EXT_SIZE>(gr.size() + 1);
 }
 
+void SetFoldGlobalState(const primary_t& r, const energy::EnergyModel& em) {
+  energy::SetEnergyGlobalState(r, em);
+  internal::gp.resize(gr.size());
+  internal::gctd.resize(gr.size());
+  internal::genergy = MAX_E;
+  std::fill(internal::gp.begin(), internal::gp.end(), -1);
+  std::fill(internal::gctd.begin(), internal::gctd.end(), CTD_NA);
+  internal::gdp = array3d_t<energy_t, internal::DP_SIZE>(gr.size() + 1);
+  internal::gext = array2d_t<energy_t, internal::EXT_SIZE>(gr.size() + 1);
 }
+
 }
 }

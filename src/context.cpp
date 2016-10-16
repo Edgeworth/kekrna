@@ -61,7 +61,7 @@ context_opt_t ContextOptionsFromArgParse(const ArgParse& argparse) {
 }
 
 void Context::ComputeTables() {
-  fold::internal::SetFoldGlobalState(r, *em);
+  fold::SetFoldGlobalState(r, *em);
   switch (options.table_alg) {
     case context_opt_t::TableAlg::ZERO:
       fold::internal::ComputeTables0();
@@ -121,7 +121,7 @@ int Context::Suboptimal(fold::SuboptimalCallback fn, bool sorted,
   }
 }
 partition::partition_t Context::Partition() {
-  partition::internal::SetPartitionGlobalState(r, *em);
+  partition::SetPartitionGlobalState(r, *em);
   switch (options.partition_alg) {
     case context_opt_t::PartitionAlg::ZERO:
       partition::internal::Partition0();

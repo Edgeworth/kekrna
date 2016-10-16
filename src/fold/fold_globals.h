@@ -19,7 +19,6 @@
 #include "common.h"
 #include "energy/energy_model.h"
 #include "fold/fold_constants.h"
-#include "fold/precomp.h"
 
 namespace kekrna {
 namespace fold {
@@ -29,12 +28,13 @@ extern std::vector<int> gp;
 extern std::vector<Ctd> gctd;
 extern std::string grep;
 extern energy_t genergy;
-extern precomp_t gpc;
 extern array3d_t<energy_t, DP_SIZE> gdp;
 extern array2d_t<energy_t, EXT_SIZE> gext;
 
-void SetFoldGlobalState(const primary_t& r, const energy::EnergyModel& em);
 }
+
+void SetFoldGlobalState(const primary_t& r, const energy::EnergyModel& em);
+
 }
 }
 
