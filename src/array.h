@@ -52,6 +52,8 @@ public:
     return reinterpret_cast<const ArrayType*>(&data[idx * size * K]);
   }
 
+  std::size_t Size() const { return size; }
+
 private:
   T* data;
   std::size_t size;

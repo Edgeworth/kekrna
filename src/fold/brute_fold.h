@@ -17,6 +17,7 @@
 
 #include "common.h"
 #include "energy/energy_model.h"
+#include "partition/partition.h"
 
 namespace kekrna {
 namespace fold {
@@ -25,8 +26,14 @@ namespace internal {
 std::vector<int> GetBranchCounts(const std::vector<int>& p);
 }
 
-std::vector<computed_t> FoldBruteForce(
+computed_t FoldBruteForce(const primary_t& r, const energy::EnergyModel& em);
+
+std::vector<computed_t> SuboptimalBruteForce(
     const primary_t& r, const energy::EnergyModel& em, int max_structures_);
+
+std::pair<partition::partition_t, partition::probabilities_t>
+PartitionBruteForce(const primary_t& r, const energy::EnergyModel& em);
+
 }
 }
 #endif  // KEKRNA_BRUTE_FOLD_H

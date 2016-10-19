@@ -13,16 +13,19 @@
 // You should have received a copy of the GNU General Public License along with kekrna.
 // If not, see <http://www.gnu.org/licenses/>.
 #include "partition/partition.h"
+#include "globals.h"
 
 namespace kekrna {
 namespace partition {
-namespace internal {
 
-partition_t ComputeProbabilities() {
-  // TODO implement.
-  return {};
+probabilities_t ComputeProbabilities(const partition_t& partition) {
+  const int N = int(partition.p.Size());
+  probabilities_t probabilities(std::size_t(N), 0);
+  for (int i = 0; i < N; ++i)
+    for (int j = i; j < N; ++j)
+      probabilities[i][j][0] = partition.p[i][j][0] * partition.p[j][i][0] / partition.q;
+  return probabilities;
 }
 
-}
 }
 }

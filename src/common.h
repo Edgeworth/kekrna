@@ -40,6 +40,7 @@ namespace kekrna {
 typedef int8_t base_t;
 typedef std::vector<base_t> primary_t;
 typedef int32_t energy_t;
+typedef double penergy_t;  // TODO fixed point?
 
 enum Ctd : int8_t {
   CTD_NA,

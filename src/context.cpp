@@ -83,7 +83,7 @@ void Context::ComputeTables() {
 
 computed_t Context::Fold() {
   if (options.table_alg == context_opt_t::TableAlg::BRUTE)
-    return fold::FoldBruteForce(r, *em, 1)[0];
+    return fold::FoldBruteForce(r, *em);
 
   ComputeTables();
   fold::internal::Traceback();
@@ -104,7 +104,7 @@ std::vector<computed_t> Context::SuboptimalIntoVector(bool sorted,
 int Context::Suboptimal(fold::SuboptimalCallback fn, bool sorted,
     energy_t subopt_delta, int subopt_num) {
   if (options.suboptimal_alg == context_opt_t::SuboptimalAlg::BRUTE) {
-    auto computeds = fold::FoldBruteForce(r, *em, subopt_num);
+    auto computeds = fold::SuboptimalBruteForce(r, *em, subopt_num);
     for (const auto& computed : computeds)
       fn(computed);
     return int(computeds.size());
@@ -126,10 +126,18 @@ partition::partition_t Context::Partition() {
   switch (options.partition_alg) {
     case context_opt_t::PartitionAlg::ZERO:
       partition::internal::Partition0();
+      break;
     case context_opt_t::PartitionAlg::BRUTE:
       verify_expr(false, "not implemented yet");  // TODO implement
   }
-  return partition::internal::ComputeProbabilities();
+  partition::internal::Exterior();
+  const auto& gpt = partition::internal::gpt;
+  const int size = int(r.size());
+  array3d_t<penergy_t, 1> p((std::size_t(size)));
+  for (int i = 0; i < size; ++i)  // TODO optimise this?
+    for (int j = 0; j < size; ++j)
+      p[i][j][0] = gpt[i][j][partition::PT_P];
+  return {std::move(p), partition::internal::gptext[0][partition::PTEXT]};
 }
 
 }

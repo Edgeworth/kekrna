@@ -56,6 +56,12 @@ inline bool ViableFoldingPair(int st, int en) {
           (st > 0 && en < int(gr.size() - 1) && CanPair(gr[st - 1], gr[en + 1])));
 }
 
+inline penergy_t Boltzmann(energy_t energy) {
+  if (energy >= CAP_E) return 0.0;
+  // TODO magic to optimise this?
+  return exp(double(energy) * (-1.0 / (10.0 * R * T)));
+}
+
 }
 }
 

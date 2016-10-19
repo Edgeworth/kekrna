@@ -37,7 +37,8 @@ public:
       const primary_t& r, energy_t energy_delta) const override;
   virtual std::vector<computed_t> SuboptimalIntoVector(
       const primary_t& r, energy_t energy_delta) const override;
-  virtual partition::partition_t Partition(const primary_t& r) const override;
+  virtual std::pair<partition::partition_t, partition::probabilities_t> Partition(
+      const primary_t& r) const override;
 
 private:
   const energy::EnergyModelPtr em;

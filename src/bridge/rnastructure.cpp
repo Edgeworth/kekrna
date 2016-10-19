@@ -129,20 +129,11 @@ std::vector<computed_t> Rnastructure::SuboptimalIntoVector(
   return computeds;
 }
 
-partition::partition_t Rnastructure::Partition(const primary_t& r) const {
-  return PartitionAndTable(r);
-}
-
-partition::partition_t Rnastructure::PartitionAndTable(
+std::pair<partition::partition_t, partition::probabilities_t> Rnastructure::Partition(
     const primary_t& r) const {
-  // void calculatepfunction(structure* ct, pfdatatable* data, TProgressDialog* update, char* save,
-  //  bool quickQ, PFPRECISION* Q, DynProgArray<PFPRECISION>* w, DynProgArray<PFPRECISION>* v,
-  //      DynProgArray<PFPRECISION>* wmb, DynProgArray<PFPRECISION>* wl, DynProgArray<PFPRECISION>* wmbl,
-  //      DynProgArray<PFPRECISION>* wcoax, forceclass* fce, PFPRECISION* w5, PFPRECISION* w3, bool* mod,
-  //      bool* lfce);
   const auto structure = LoadStructure(r);
   const int length = int(r.size());
-  const PFPRECISION scaling = 0.6;
+  const PFPRECISION scaling = 1.0;  // TODO return scaling to 0.6.
   DynProgArray<PFPRECISION> w(length);
   DynProgArray<PFPRECISION> v(length);
   DynProgArray<PFPRECISION> wmb(length);
@@ -159,9 +150,16 @@ partition::partition_t Rnastructure::PartitionAndTable(
   calculatepfunction(structure.get(), pfdata.get(), nullptr, nullptr, false, nullptr,
       &w, &v, &wmb, &wl, &wmbl, &wcoax, fce.get(), w5.get(), w3.get(), mod.get(), lfce.get());
 
-  partition::partition_t probability(std::size_t(length), 0);
-  //PFPRECISION calculateprobability(int i, int j, DynProgArray<PFPRECISION>* v, PFPRECISION* w5,
-  //structure* ct, pfdatatable* data, bool* lfce, bool* mod, PFPRECISION scaling, forceclass* fce) {
+  partition::partition_t partition = {{std::size_t(length)}, 0.0};
+  partition.q = w5[length];
+  for (int i = 1; i <= length; ++i) {
+    for (int j = i; j < length + i; ++j) {
+      int adjusted = j > length ? j - length - 1 : j - 1;
+      partition.p[i - 1][adjusted][0] = v.f(i, j);
+    }
+  }
+
+  partition::probabilities_t probability(std::size_t(length), 0);
   for (int i = 0; i < length; ++i) {
     for (int j = i; j < length; ++j) {
       probability[i][j][0] = calculateprobability(
@@ -169,7 +167,8 @@ partition::partition_t Rnastructure::PartitionAndTable(
           pfdata.get(), lfce.get(), mod.get(), scaling, fce.get());
     }
   }
-  return probability;
+  return {std::move(partition), std::move(probability)};
 }
+
 }
 }

@@ -15,30 +15,53 @@
 #ifndef KEKRNA_PARTITION_H
 #define KEKRNA_PARTITION_H
 
+#include <cmath>
 #include "common.h"
 #include "array.h"
 
 namespace kekrna {
 namespace partition {
 
-enum {
+enum : int8_t {
   PT_P,
+  PT_U,
+  PT_U2,
+  PT_U_WC,
+  PT_U_GU,
+  PT_U_RCOAX,
   PT_SIZE
 };
 
-typedef double penergy_t;
+enum : int8_t {
+  PTEXT,
+  PTEXT_WC,     // Must start with a branch not involved in an interaction that is Watson-Crick
+  PTEXT_GU,     // Must start with a branch not involved in an interaction that is GU
+  PTEXT_RCOAX,  // Must start with a branch, that branch is involved backwards in a RCOAX stack.
+  PTEXT_SIZE
+};
+
 // TODO rename this probability or something
-typedef array3d_t<penergy_t, 1> partition_t;
+typedef array3d_t<penergy_t, 1> probabilities_t;
+
+struct partition_t {
+  array3d_t<penergy_t, 1> p;
+  penergy_t q;
+
+//  partition_t(partition_t&&) = default; TODO
+//  partition_t& operator=(partition_t&&) = default;
+//
+//  partition_t(const partition_t&) = delete;
+//  partition_t& operator=(const partition_t&) = delete;
+};
+
+probabilities_t ComputeProbabilities(const partition_t& partition);
 
 namespace internal {
 
 void Partition0();
-
-partition_t ComputeProbabilities();
+void Exterior();
 
 }
-
-
 }
 }
 

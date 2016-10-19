@@ -247,7 +247,7 @@ private:
     context_opt_t options(
         context_opt_t::TableAlg::TWO, context_opt_t::SuboptimalAlg::ZERO);
     Context ctx(r, em, options);
-    auto subopt_brute = FoldBruteForce(r, *em, SUBOPT_BRUTE_MAX_STRUCTURES);
+    auto subopt_brute = SuboptimalBruteForce(r, *em, SUBOPT_BRUTE_MAX_STRUCTURES);
     auto subopt_kekrna = ctx.SuboptimalIntoVector(true, -1, SUBOPT_BRUTE_MAX_STRUCTURES);
 
     AppendErrors(
