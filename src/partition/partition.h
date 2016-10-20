@@ -46,17 +46,17 @@ typedef array3d_t<penergy_t, 1> probabilities_t;
 struct partition_t {
   array3d_t<penergy_t, 1> p;
   penergy_t q;
-
-//  partition_t(partition_t&&) = default; TODO
-//  partition_t& operator=(partition_t&&) = default;
-//
-//  partition_t(const partition_t&) = delete;
-//  partition_t& operator=(const partition_t&) = delete;
 };
 
 probabilities_t ComputeProbabilities(const partition_t& partition);
 
 namespace internal {
+
+// Only works with [0, 2N).
+inline int FastMod(int a, int m) {
+  if (a >= m) return a - m;
+  return a;
+}
 
 void Partition0();
 void Exterior();

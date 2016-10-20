@@ -138,18 +138,10 @@ void AddAllCombinations(int idx) {
                 computed, false, i, gp[i], energy::gem);  // TODO optimisation?
 
             if (inside_new) {
-              //printf("New inside structure: %s\n", parsing::ComputedToCtdString(computed).c_str());
               partition.p[i][gp[i]][0] += energy::Boltzmann(inside_energy);
               substructure_map.Insert(inside_structure, nothing_t());
             }
             if (outside_new) {
-//              printf("New outside structure: %s\n", parsing::ComputedToCtdString(computed).c_str());
-//              for (int j = 0; j < 6; ++j)
-//                printf("%04x ", outside_structure.bits[j]);
-//              printf("\n");
-//              for (int j = 0; j < 6; ++j)
-//                printf("%04x ", inside_structure.bits[j]);
-//              printf("\n");
               partition.p[gp[i]][i][0] += energy::Boltzmann(computed.energy - inside_energy);
               substructure_map.Insert(outside_structure, nothing_t());
             }

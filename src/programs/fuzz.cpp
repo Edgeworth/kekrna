@@ -29,39 +29,93 @@ using namespace kekrna;
 using namespace fold;
 using namespace fold::internal;
 
-const int SUBOPT_BRUTE_MAX_STRUCTURES = 10000;
-const energy_t SUBOPT_MAX_DELTA = 6;  // Same as RNAstructure default.
+struct cfg_t {
+  bool random_model = false;
+  uint_fast32_t seed = 0;
+
+  bool subopt = true;
+  bool subopt_rnastructure = false;
+  int subopt_max = 5000;
+  int subopt_delta = 6;  // Same as RNAstructure default.
+
+  int brute_cutoff = 30;
+  int brute_subopt_max = 100000;
+
+  bool partition = true;
+
+  std::string Describe() {
+    std::string desc;
+    if (random_model) desc += "random energy models";
+    else desc += "T04 energy model";
+    if (subopt) {
+      desc += " - testing suboptimal";
+      if (subopt_rnastructure) desc += " (including rnastructure)";
+      desc += sfmt(" max: %d delta: %d", subopt_max, subopt_delta);
+    }
+    desc += sfmt(" - brute cutoff: %d subopt-max: %d", brute_cutoff, brute_subopt_max);
+    if (partition) desc += " - testing partition";
+    return desc;
+  }
+};
+
+const std::map<std::string, opt_t> CFG_OPTIONS = {
+    {"random", opt_t("use random energy models (disables comparison to RNAstructure)")},
+    {"no-subopt", opt_t("whether to test suboptimal folding")},
+    {"subopt-rnastructure", opt_t("test rnastructure suboptimal folding")},
+    {"subopt-max", opt_t("maximum number of substructures for subopt max-delta fuzz")},
+    {"subopt-delta", opt_t("delta for subopt delta fuzz")},
+    {"brute-cutoff", opt_t("maximum rna size to run brute force on")},
+    {"brute-subopt-max", opt_t("maximum number of substructures for brute force fuzz")},
+    {"no-partition", opt_t("whether to test partition function")},
+};
+
+cfg_t CfgFromArgParse(const ArgParse& argparse) {
+  cfg_t cfg;
+  cfg.random_model = argparse.HasFlag("random");
+  cfg.subopt = !argparse.HasFlag("no-subopt");
+  cfg.subopt_rnastructure = argparse.HasFlag("subopt-rnastructure");
+  if (argparse.HasFlag("subopt-max"))
+    cfg.subopt_max = atoi(argparse.GetOption("subopt-max").c_str());
+  if (argparse.HasFlag("subopt-delta"))
+    cfg.subopt_delta = atoi(argparse.GetOption("subopt-delta").c_str());
+  if (argparse.HasFlag("brute-cutoff"))
+    cfg.brute_cutoff = atoi(argparse.GetOption("brute-cutoff").c_str());
+  if (argparse.HasFlag("brute-subopt-max"))
+    cfg.brute_subopt_max = atoi(argparse.GetOption("brute-subopt-max").c_str());
+  cfg.partition = !argparse.HasFlag("no-partition");
+
+  verify_expr(!cfg.subopt_rnastructure || cfg.subopt,
+      "suboptimal folding testing must be enabled to test rnastructure suboptimal folding");
+  verify_expr(!(cfg.random_model && cfg.subopt_rnastructure),
+      "cannot use a random energy model with rnastructure");
+  return cfg;
+}
+
 
 class Fuzzer {
 public:
   typedef std::deque<std::string> error_t;
 
-  Fuzzer(primary_t r_, const energy::EnergyModelPtr em_, bool random_model_, uint_fast32_t seed_,
-      const bridge::Rnastructure& rnastructure_, bool do_subopt_, bool do_subopt_rnastructure_,
-      int max_structures_, int brute_cutoff_)
-      : r(std::move(r_)), em(random_model_ ? energy::LoadRandomEnergyModel(seed_) : em_),
-        random_model(random_model_), seed(seed_), rnastructure(rnastructure_),
-        do_subopt(do_subopt_), do_subopt_rnastructure(do_subopt_rnastructure_),
-        max_structures(max_structures_), brute_cutoff(brute_cutoff_) {
-    verify_expr(!do_subopt_rnastructure || do_subopt,
-        "suboptimal folding testing must be enabled to test rnastructure suboptimal folding");
-    verify_expr(!(random_model && do_subopt_rnastructure),
-        "cannot use a random energy model with rnastructure");
-  }
+  Fuzzer(primary_t r_, const cfg_t& cfg_, const energy::EnergyModelPtr em_,
+      const bridge::Rnastructure& rnastructure_)
+      : r(std::move(r_)), cfg(cfg_),
+        em(cfg.random_model ? energy::LoadRandomEnergyModel(cfg.seed) : em_),
+        rnastructure(rnastructure_) {}
 
   error_t Run() {
     error_t errors;
     AppendErrors(errors, MaybePrependHeader(KekrnaComputeAndCheckState(), "kekrna:"));
-    if (!random_model)
+    if (!cfg.random_model)
       AppendErrors(errors, MaybePrependHeader(RnastructureComputeAndCheckState(), "rnastructure:"));
-    if (int(r.size()) <= brute_cutoff)
-      AppendErrors(errors, MaybePrependHeader(CheckBruteForce(), "brute force:"));
     AppendErrors(errors, MaybePrependHeader(CheckDpTables(), "dp tables:"));
-    if (do_subopt) AppendErrors(errors, MaybePrependHeader(CheckSuboptimal(), "suboptimal:"));
+    if (cfg.subopt) AppendErrors(errors, MaybePrependHeader(CheckSuboptimal(), "suboptimal:"));
+
+    if (int(r.size()) <= cfg.brute_cutoff)
+      AppendErrors(errors, MaybePrependHeader(CheckBruteForce(), "brute force:"));
 
     if (!errors.empty()) {
-      if (random_model)
-        errors.push_front(sfmt("Used random energy model with seed: %" PRIuFAST32 "\n", seed));
+      if (cfg.random_model)
+        errors.push_front(sfmt("Used random energy model with seed: %" PRIuFAST32 "\n", cfg.seed));
       else
         errors.push_front(sfmt("Used T04 energy model"));
       errors = MaybePrependHeader(errors,
@@ -73,14 +127,9 @@ public:
 
 private:
   const primary_t r;
+  const cfg_t cfg;
   const energy::EnergyModelPtr em;
-  const bool random_model;
-  const uint_fast32_t seed;
   const bridge::Rnastructure& rnastructure;
-  const bool do_subopt;
-  const bool do_subopt_rnastructure;
-  const int max_structures;
-  const int brute_cutoff;
 
   // Fuzz state.
   std::vector<computed_t> kekrna_computeds;
@@ -166,6 +215,48 @@ private:
     return errors;
   }
 
+  error_t CheckSuboptimal() {
+    error_t errors;
+    std::vector<std::vector<computed_t>> kekrna_subopts_delta, kekrna_subopts_num;
+    for (auto subopt_alg : context_opt_t::SUBOPTIMAL_ALGS) {
+      context_opt_t options(context_opt_t::TableAlg::TWO, subopt_alg);
+      Context ctx(r, em, options);
+      kekrna_subopts_delta.push_back(ctx.SuboptimalIntoVector(true, cfg.subopt_delta, -1));
+      kekrna_subopts_num.push_back(ctx.SuboptimalIntoVector(true, -1, cfg.subopt_max));
+    }
+
+    for (int i = 0; i < int(kekrna_subopts_delta.size()); ++i) {
+      AppendErrors(errors, MaybePrependHeader(CheckSuboptimalResult(kekrna_subopts_delta[i], true),
+          sfmt("kekrna delta suboptimal %d:", i)));
+      AppendErrors(errors, MaybePrependHeader(
+          CheckSuboptimalResultPair(kekrna_subopts_delta[0], kekrna_subopts_delta[i]),
+          sfmt("kekrna 0 vs kekrna %d delta suboptimal:", i)));
+    }
+
+    for (int i = 0; i < int(kekrna_subopts_num.size()); ++i) {
+      AppendErrors(errors, MaybePrependHeader(CheckSuboptimalResult(kekrna_subopts_num[i], true),
+          sfmt("kekrna num suboptimal %d:", i)));
+      AppendErrors(errors, MaybePrependHeader(
+          CheckSuboptimalResultPair(kekrna_subopts_num[0], kekrna_subopts_num[i]),
+          sfmt("kekrna 0 vs kekrna %d num suboptimal:", i)));
+    }
+
+    if (cfg.subopt_rnastructure) {
+      // Suboptimal folding. Ignore ones with MFE >= -SUBOPT_MAX_DELTA because RNAstructure does
+      // strange things
+      // when the energy for suboptimal structures is 0 or above.
+      if (kekrna_computeds[0].energy < -cfg.subopt_delta) {
+        const auto rnastructure_subopt = rnastructure.SuboptimalIntoVector(r, cfg.subopt_delta);
+        AppendErrors(errors, MaybePrependHeader(CheckSuboptimalResult(rnastructure_subopt, false),
+            "rnastructure suboptimal:"));
+        AppendErrors(errors, MaybePrependHeader(CheckSuboptimalResultPair(
+            kekrna_subopts_delta[0], rnastructure_subopt), "kekrna vs rnastructure suboptimal:"));
+      }
+    }
+
+    return errors;
+  }
+
   error_t CheckDpTables() {
     error_t errors;
     int st = 0, en = 0, a = 0;
@@ -184,7 +275,7 @@ private:
               goto loopend;
             }
           }
-          if (!random_model && (a == DP_P || a == DP_U)) {
+          if (!cfg.random_model && (a == DP_P || a == DP_U)) {
             energy_t rnastructureval = a == DP_P ? rnastructure_dp.v.f(st + 1, en + 1)
                 : rnastructure_dp.w.f(st + 1, en + 1);
             if (((kekrna0 < CAP_E) != (rnastructureval < INFINITE_ENERGY - 1000) ||
@@ -245,95 +336,46 @@ private:
   error_t CheckBruteForce() {
     error_t errors;
     context_opt_t options(
-        context_opt_t::TableAlg::TWO, context_opt_t::SuboptimalAlg::ZERO);
+        context_opt_t::TableAlg::TWO,
+        context_opt_t::SuboptimalAlg::ONE,
+        context_opt_t::PartitionAlg::ZERO);
     Context ctx(r, em, options);
-    auto subopt_brute = SuboptimalBruteForce(r, *em, SUBOPT_BRUTE_MAX_STRUCTURES);
-    auto subopt_kekrna = ctx.SuboptimalIntoVector(true, -1, SUBOPT_BRUTE_MAX_STRUCTURES);
 
-    AppendErrors(
-        errors, MaybePrependHeader(CheckSuboptimalResult(subopt_brute, true), "brute suboptimal:"));
-    AppendErrors(errors,
-        MaybePrependHeader(CheckSuboptimalResult(subopt_kekrna, true), "kekrna suboptimal:"));
-    AppendErrors(errors, MaybePrependHeader(CheckSuboptimalResultPair(subopt_brute, subopt_kekrna),
-        "brute vs kekrna suboptimal:"));
-    return errors;
-  }
+    if (cfg.subopt) {
+      auto brute_subopt = SuboptimalBruteForce(r, *em, cfg.brute_subopt_max);
+      auto kekrna_subopt = ctx.SuboptimalIntoVector(true, -1, cfg.brute_subopt_max);
 
-  error_t CheckSuboptimal() {
-    error_t errors;
-    std::vector<std::vector<computed_t>> kekrna_subopts_delta, kekrna_subopts_num;
-    for (auto subopt_alg : context_opt_t::SUBOPTIMAL_ALGS) {
-      context_opt_t options(context_opt_t::TableAlg::TWO, subopt_alg);
-      Context ctx(r, em, options);
-      kekrna_subopts_delta.push_back(ctx.SuboptimalIntoVector(true, SUBOPT_MAX_DELTA, -1));
-      kekrna_subopts_num.push_back(ctx.SuboptimalIntoVector(true, -1, max_structures));
-    }
-
-    for (int i = 0; i < int(kekrna_subopts_delta.size()); ++i) {
-      AppendErrors(errors, MaybePrependHeader(CheckSuboptimalResult(kekrna_subopts_delta[i], true),
-          sfmt("kekrna delta suboptimal %d:", i)));
       AppendErrors(errors,
-          MaybePrependHeader(
-              CheckSuboptimalResultPair(kekrna_subopts_delta[0], kekrna_subopts_delta[i]),
-              sfmt("kekrna 0 vs kekrna %d delta suboptimal:", i)));
-    }
-
-    for (int i = 0; i < int(kekrna_subopts_num.size()); ++i) {
-      AppendErrors(errors, MaybePrependHeader(CheckSuboptimalResult(kekrna_subopts_num[i], true),
-          sfmt("kekrna num suboptimal %d:", i)));
+          MaybePrependHeader(CheckSuboptimalResult(brute_subopt, true), "brute suboptimal:"));
       AppendErrors(errors,
-          MaybePrependHeader(
-              CheckSuboptimalResultPair(kekrna_subopts_num[0], kekrna_subopts_num[i]),
-              sfmt("kekrna 0 vs kekrna %d num suboptimal:", i)));
+          MaybePrependHeader(CheckSuboptimalResult(kekrna_subopt, true), "kekrna suboptimal:"));
+      AppendErrors(errors, MaybePrependHeader(
+          CheckSuboptimalResultPair(brute_subopt, kekrna_subopt), "brute vs kekrna suboptimal:"));
     }
 
-    if (do_subopt_rnastructure) {
-      // Suboptimal folding. Ignore ones with MFE >= -SUBOPT_MAX_DELTA because RNAstructure does
-      // strange things
-      // when the energy for suboptimal structures is 0 or above.
-      if (kekrna_computeds[0].energy < -SUBOPT_MAX_DELTA) {
-        context_opt_t options(
-            context_opt_t::TableAlg::TWO, context_opt_t::SuboptimalAlg::ONE);
-        Context ctx(r, em, options);
-        auto kekrna_subopt = ctx.SuboptimalIntoVector(true, SUBOPT_MAX_DELTA, -1);
-        const auto rnastructure_subopt = rnastructure.SuboptimalIntoVector(r, SUBOPT_MAX_DELTA);
-        AppendErrors(errors,
-            MaybePrependHeader(CheckSuboptimalResult(kekrna_subopt, true), "kekrna suboptimal:"));
-        AppendErrors(errors, MaybePrependHeader(CheckSuboptimalResult(rnastructure_subopt, false),
-            "rnastructure suboptimal:"));
-        AppendErrors(errors,
-            MaybePrependHeader(CheckSuboptimalResultPair(kekrna_subopt, rnastructure_subopt),
-                "kekrna vs rnastructure suboptimal:"));
-      }
-    }
+    // TODO partition
+    if (cfg.partition) {
 
+    }
     return errors;
   }
 };
 
 int main(int argc, char* argv[]) {
   std::mt19937 eng(uint_fast32_t(time(nullptr)));
-  ArgParse argparse({{"print-interval",
-      opt_t("status update every n seconds").Arg("-1")},
-      {"random", opt_t("use random energy models (disables comparison to RNAstructure)")},
-      {"no-subopt", opt_t("do not test suboptimal folding")},
-      {"subopt-rnastructure", opt_t("test rnastructure suboptimal folding")},
-      {"subopt-max-structures", opt_t(
-          "maximum number of substructures for max-delta fuzz").Arg("5000")},
+  ArgParse argparse({
+      {"print-interval", opt_t("status update every n seconds").Arg("-1")},
       {"afl", opt_t("reads one rna from stdin and fuzzes - useful for use with afl")},
-      {"brute-cutoff", opt_t("maximum rna size to run brute force on").Arg("25")}
   });
+  argparse.AddOptions(CFG_OPTIONS);
   argparse.AddOptions(energy::ENERGY_OPTIONS);
   argparse.ParseOrExit(argc, argv);
 
   const bridge::Rnastructure rnastructure("extern/miles_rnastructure/data_tables/", false);
   const auto t04em = energy::LoadEnergyModelFromArgParse(argparse);
-  const bool random_model = argparse.HasFlag("random");
-  const bool do_subopt = !argparse.HasFlag("no-subopt");
-  const bool do_subopt_rnastructure = argparse.HasFlag("subopt-rnastructure");
-  const int max_structures = atoi(argparse.GetOption("subopt-max-structures").c_str());
+
+  auto cfg = CfgFromArgParse(argparse);
   const bool afl_mode = argparse.HasFlag("afl");
-  const int brute_cutoff = atoi(argparse.GetOption("brute-cutoff").c_str());
 
   if (afl_mode) {
 // AFL mode.
@@ -347,10 +389,10 @@ int main(int argc, char* argv[]) {
     while ((len = fread(buf, 1, sizeof(buf), stdin)) > 0)
       data += std::string(buf, len);
     if (data.size() > 0) {
-      uint_fast32_t seed = eng();
       // Disable brute force testing for AFL since it's too slow.
-      Fuzzer fuzzer(parsing::StringToPrimary(data), t04em, random_model, seed,
-          rnastructure, do_subopt, do_subopt_rnastructure, max_structures, 0);
+      cfg.brute_cutoff = 0;
+      cfg.seed = eng();
+      Fuzzer fuzzer(parsing::StringToPrimary(data), cfg, t04em, rnastructure);
       const auto res = fuzzer.Run();
       if (!res.empty())
         abort();
@@ -369,31 +411,22 @@ int main(int argc, char* argv[]) {
     verify_expr(max_len >= min_len, "invalid max len");
     std::uniform_int_distribution<int> len_dist(min_len, max_len);
 
-    printf("Fuzzing [%d, %d] len RNAs - ", min_len, max_len);
-    if (random_model)
-      printf("random energy models");
-    else
-      printf("T04 energy model");
-    if (do_subopt) printf(" - testing suboptimal folders");
-    if (do_subopt_rnastructure) printf(" (including rnastructure)");
-    printf("\n");
+    printf("Fuzzing [%d, %d] len RNAs - %s\n", min_len, max_len, cfg.Describe().c_str());
 
     // Normal mode.
     auto start_time = std::chrono::steady_clock::now();
     for (int64_t i = 0;; ++i) {
       if (interval > 0 &&
           std::chrono::duration_cast<std::chrono::seconds>(
-              std::chrono::steady_clock::now() - start_time)
-              .count() > interval) {
+              std::chrono::steady_clock::now() - start_time).count() > interval) {
         printf("Fuzzed %" PRId64 " RNA\n", i);
         start_time = std::chrono::steady_clock::now();
       }
       int len = len_dist(eng);
       auto r = GenerateRandomPrimary(len, eng);
 
-      uint_fast32_t seed = eng();
-      Fuzzer fuzzer(r, t04em, random_model, seed, rnastructure, do_subopt, do_subopt_rnastructure,
-          max_structures, brute_cutoff);
+      cfg.seed = eng();
+      Fuzzer fuzzer(r, cfg, t04em, rnastructure);
       const auto res = fuzzer.Run();
       if (!res.empty()) {
         for (const auto& s : res)
