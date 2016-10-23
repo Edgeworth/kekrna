@@ -51,7 +51,7 @@ precomp_t PrecomputeData(const primary_t& r, const EnergyModel& em);
 energy_t FastTwoLoop(int ost, int oen, int ist, int ien);
 energy_t FastHairpin(int st, int en);
 inline bool ViableFoldingPair(int st, int en) {
-  return CanPair(gr[st], gr[en]) &&
+  return CanPair(gr[st], gr[en]) && (en - st - 1 >= HAIRPIN_MIN_SZ) &&
       ((en - st - 3 >= HAIRPIN_MIN_SZ && CanPair(gr[st + 1], gr[en - 1])) ||
           (st > 0 && en < int(gr.size() - 1) && CanPair(gr[st - 1], gr[en + 1])));
 }

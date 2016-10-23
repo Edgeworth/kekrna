@@ -171,6 +171,9 @@ void Partition0() {
     }
   }
 
+  // Compute the exterior tables.
+  Exterior();
+
   // Fill the left triangle.
   // The meaning of the tables changes here:
   // U, U2, WC, GU, RCOAX: any table index with en < st must have a loop enclosing (en, st)
@@ -200,16 +203,17 @@ void Partition0() {
         // Try being an exterior loop - coax cases handled in the loop after this.
         {
           const auto augu = Boltzmann(gem.AuGuPenalty(enb, stb));
-          const auto left_exterior = gpt[st + 1][N - 1][PT_U] + 1.0;
-          const auto left1_exterior = lspace > 1 ? gpt[st + 2][N - 1][PT_U] + 1.0 : 1.0;
-          const auto right_exterior = rspace ? gpt[0][en - 1][PT_U] + 1.0 : 1.0;
-          const auto right1_exterior = rspace > 1 ? gpt[0][en - 2][PT_U] + 1.0 : 1.0;
+          const auto rext = gptext[st + 1][PTEXT_R];
+          const auto r1ext = lspace > 1 ? gptext[st + 2][PTEXT_R] : 1.0;
+          const auto lext = rspace ? gptext[en - 1][PTEXT_L] : 1.0;
+          const auto l1ext = rspace > 1 ? gptext[en - 2][PTEXT_L] : 1.0;
+
           // |<   >)   (<   >| - Exterior loop
-          p += augu * left_exterior * right_exterior;
+          p += augu * lext * rext;
           if (lspace) {
-            // |<   >)   (3<   >| 3' - Exterior loop
+            // |<   >(   )3<   >| 3' - Exterior loop
             // lspace > 0
-            p += augu * left1_exterior * right_exterior * Boltzmann(gem.dangle3[stb][st1b][enb]);
+            p += augu * lext * r1ext * Boltzmann(gem.dangle3[stb][st1b][enb]);
 
             // |  >5)   (<   | 5' - Enclosing loop
             if (rspace > 1)
@@ -217,9 +221,9 @@ void Partition0() {
                 Boltzmann(gem.dangle5[stb][en1b][enb]);
           }
           if (rspace) {
-            // |<   >5)   (<   >| 5' - Exterior loop
+            // |<   >5(   )<   >| 5' - Exterior loop
             // rspace > 0
-            p += augu * left_exterior * right1_exterior * Boltzmann(gem.dangle5[stb][en1b][enb]);
+            p += augu * l1ext * rext * Boltzmann(gem.dangle5[stb][en1b][enb]);
 
             // |   >)   (3<  | 3' - Enclosing loop
             if (lspace > 1)
@@ -227,10 +231,9 @@ void Partition0() {
                   Boltzmann(gem.dangle3[stb][st1b][enb]);
           }
           if (lspace && rspace) {
-            // |<   >m)   (m<   >| Terminal mismatch - Exterior loop
+            // |<   >m(   )m<   >| Terminal mismatch - Exterior loop
             // lspace > 0 && rspace > 0
-            p += augu * left1_exterior * right1_exterior *
-                Boltzmann(gem.terminal[stb][st1b][en1b][enb]);
+            p += augu * l1ext * r1ext * Boltzmann(gem.terminal[stb][st1b][en1b][enb]);
             // |   >)   (<   | - Enclosing loop
             p += base_branch_cost * gpt[st + 1][en - 1][PT_U2];
           }
@@ -246,7 +249,7 @@ void Partition0() {
           const int pl = FastMod(tpiv - 1, N), piv = FastMod(tpiv, N),
               pr = FastMod(tpiv + 1, N), pr1 = FastMod(tpiv + 2, N);
           // Left block is: [st, piv], Right block is: [piv + 1, en].
-          base_t pl1b = gr[pl], plb = gr[tpiv], prb = gr[pr], pr1b = gr[pr1];
+          base_t pl1b = gr[pl], plb = gr[piv], prb = gr[pr], pr1b = gr[pr1];
 
           // When neither the left block nor the right block straddles the border
           // we don't get enclosing loops sometimes. So check that with |not_straddling|.
@@ -270,21 +273,21 @@ void Partition0() {
 
           if (lspace && right_not_straddling) {
             const auto outer_coax = gem.MismatchCoaxial(stb, st1b, en1b, enb);  // TODO recomputation here
-            const auto left_exterior = lspace > 1 ? gpt[st + 2][N - 1][PT_U] + 1.0 : 1.0;
-            const auto right_exterior = gpt[0][piv][PT_U] + 1.0;
+            const auto lext = lspace > 1 ? gptext[st + 2][PTEXT_R] : 1.0;
+            const auto rext = gptext[piv][PTEXT_L];
             // |<   >(   ).)   (.<   >| Exterior loop - Right outer coax
             // lspace > 0 && rspace > 1 && not enclosed
-            p += gpt[pr][en - 2][PT_P] * left_exterior * right_exterior * Boltzmann(
+            p += gpt[pr][en - 2][PT_P] * lext * rext * Boltzmann(
                 gem.AuGuPenalty(stb, enb) + gem.AuGuPenalty(prb, en2b) + outer_coax);
           }
 
           if (rspace && left_not_straddling) {
             const auto outer_coax = gem.MismatchCoaxial(stb, st1b, en1b, enb);  // TODO recomputation here
-            const auto left_exterior = gpt[piv + 1][N - 1][PT_U] + 1.0;
-            const auto right_exterior = rspace > 1 ? gpt[0][en - 2][PT_U] + 1.0 : 1.0;
+            const auto lext = gptext[piv + 1][PTEXT_R];
+            const auto rext = rspace > 1 ? gptext[en - 2][PTEXT_L] : 1.0;
             // |<   >.)   (.(   )<   >| Exterior loop - Left outer coax
             // lspace > 0 && rspace > 0 && not enclosed
-            p += gpt[st + 2][piv][PT_P] * left_exterior * right_exterior * Boltzmann(
+            p += gpt[st + 2][piv][PT_P] * lext * rext * Boltzmann(
                 gem.AuGuPenalty(stb, enb) + gem.AuGuPenalty(st2b, plb) + outer_coax);
           }
 
@@ -296,18 +299,16 @@ void Partition0() {
           }
 
           if (left_not_straddling) {
-            const auto left_exterior = gpt[piv + 1][N - 1][PT_U] + 1.0;
-            const auto right_exterior = rspace ? gpt[0][en - 1][PT_U] + 1.0 : 1.0;
+            const auto lext = gptext[piv + 1][PTEXT_R];
+            const auto rext = rspace ? gptext[en - 1][PTEXT_L] : 1.0;
             // |<   >)   (.(   ).<   >| Exterior loop - Left right coax
             // lspace > 1 && not enclosed
-            p += gpt[st + 2][pl][PT_P] * left_exterior * right_exterior * Boltzmann(
-                gem.AuGuPenalty(stb, enb) + gem.AuGuPenalty(st2b, pl1b) +
-                    gem.MismatchCoaxial(pl1b, plb, st1b, st2b));
+            p += gpt[st + 2][pl][PT_P] * lext * rext * Boltzmann(gem.AuGuPenalty(stb, enb) +
+                gem.AuGuPenalty(st2b, pl1b) + gem.MismatchCoaxial(pl1b, plb, st1b, st2b));
             // |<   >)   ((   )<   >| Exterior loop - Left flush coax
             // lspace > 0 && not enclosed
-            p += gpt[st + 1][piv][PT_P] * left_exterior * right_exterior * Boltzmann(
-                gem.AuGuPenalty(stb, enb) + gem.AuGuPenalty(st1b, plb) +
-                    gem.stack[stb][st1b][plb][enb]);
+            p += gpt[st + 1][piv][PT_P] * lext * rext * Boltzmann(gem.AuGuPenalty(stb, enb) +
+                gem.AuGuPenalty(st1b, plb) + gem.stack[stb][st1b][plb][enb]);
           }
 
           if (lspace && rspace > 1 && right_dot_straddling) {
@@ -318,18 +319,16 @@ void Partition0() {
           }
 
           if (right_not_straddling) {
-            const auto left_exterior = gpt[st + 1][N - 1][PT_U] + 1.0;
-            const auto right_exterior = gpt[0][piv][PT_U] + 1.0;
+            const auto lext = gptext[st + 1][PTEXT_R];
+            const auto rext = gptext[piv][PTEXT_L];
             // |<   >.(   ).)   (<   >| Exterior loop - Right left coax
             // rspace > 1 && not enclosed
-            p += gpt[pr1][en - 2][PT_P] * left_exterior * right_exterior * Boltzmann(
-                gem.AuGuPenalty(stb, enb) + gem.AuGuPenalty(pr1b, en2b) +
-                    gem.MismatchCoaxial(en2b, en1b, plb, pr1b));
+            p += gpt[pr1][en - 2][PT_P] * lext * rext * Boltzmann(gem.AuGuPenalty(stb, enb) +
+                gem.AuGuPenalty(pr1b, en2b) + gem.MismatchCoaxial(en2b, en1b, plb, pr1b));
             // |<   >(   ))   (<   >| Exterior loop - Right flush coax
             // rspace > 0 && not enclosed
-            p += gpt[pr][en - 1][PT_P] * left_exterior * right_exterior * Boltzmann(
-                gem.AuGuPenalty(stb, enb) + gem.AuGuPenalty(prb, en1b) +
-                    gem.stack[stb][prb][en1b][enb]);
+            p += gpt[pr][en - 1][PT_P] * lext * rext * Boltzmann(gem.AuGuPenalty(stb, enb) +
+                gem.AuGuPenalty(prb, en1b) + gem.stack[stb][prb][en1b][enb]);
           }
 
           if (lspace && rspace && straddling) {

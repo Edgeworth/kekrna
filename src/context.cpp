@@ -130,14 +130,13 @@ partition::partition_t Context::Partition() {
     case context_opt_t::PartitionAlg::BRUTE:
       verify_expr(false, "not implemented yet");  // TODO implement
   }
-  partition::internal::Exterior();
   const auto& gpt = partition::internal::gpt;
   const int size = int(r.size());
   array3d_t<penergy_t, 1> p((std::size_t(size)));
   for (int i = 0; i < size; ++i)  // TODO optimise this?
     for (int j = 0; j < size; ++j)
       p[i][j][0] = gpt[i][j][partition::PT_P];
-  return {std::move(p), partition::internal::gptext[0][partition::PTEXT]};
+  return {std::move(p), partition::internal::gptext[0][partition::PTEXT_R]};
 }
 
 }
