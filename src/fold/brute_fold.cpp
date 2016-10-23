@@ -99,12 +99,13 @@ substructure_id_t WriteBits(int st, int en, int N, bool inside) {
     if (inside && (i < st || i > en)) continue;
     if (!inside && i > st && i < en) continue;
     uint16_t pack = uint16_t((gp[i] & PT_MASK) << CTD_MAX_BITS | (gctd[i] & CTD_MASK));
+
     int byte = b / 16;
     int bit = b & 15;
     struc.bits[byte] = uint16_t(struc.bits[byte] | (pack << bit));
-    int excess = bit + PT_MAX_BITS + CTD_MAX_BITS - 16;
-    if (excess > 0)
-      struc.bits[byte + 1] = uint16_t(struc.bits[byte + 1] | (pack >> (excess)));
+    int space = 16 - bit;
+    if (space < CTD_MAX_BITS + PT_MAX_BITS)
+      struc.bits[byte + 1] = uint16_t(struc.bits[byte + 1] | (pack >> space));
   }
   return struc;
 }
