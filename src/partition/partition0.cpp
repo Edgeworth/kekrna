@@ -174,7 +174,7 @@ void Partition0() {
   // Fill the left triangle.
   // The meaning of the tables changes here:
   // U, U2, WC, GU, RCOAX: any table index with en < st must have a loop enclosing (en, st)
-  for (int st = 0; st < N; ++st) {
+  for (int st = N - 1; st >= 0; --st) {
     for (int en = 0; en < st; ++en) {
       //        ..)...(..
       // rspace  en   st  lspace
@@ -206,9 +206,8 @@ void Partition0() {
           const auto right1_exterior = rspace > 1 ? gpt[0][en - 2][PT_U] + 1.0 : 1.0;
           // |<   >)   (<   >| - Exterior loop
           p += augu * left_exterior * right_exterior;
-
           if (lspace) {
-            // |<   >)   (3<   >| - Exterior loop
+            // |<   >)   (3<   >| 3' - Exterior loop
             // lspace > 0
             p += augu * left1_exterior * right_exterior * Boltzmann(gem.dangle3[stb][st1b][enb]);
 
@@ -217,7 +216,6 @@ void Partition0() {
               p += base_branch_cost * gpt[st + 1][en - 2][PT_U2] *
                 Boltzmann(gem.dangle5[stb][en1b][enb]);
           }
-
           if (rspace) {
             // |<   >5)   (<   >| 5' - Exterior loop
             // rspace > 0
@@ -228,7 +226,6 @@ void Partition0() {
               p += base_branch_cost * gpt[st + 2][en - 1][PT_U2] *
                   Boltzmann(gem.dangle3[stb][st1b][enb]);
           }
-
           if (lspace && rspace) {
             // |<   >m)   (m<   >| Terminal mismatch - Exterior loop
             // lspace > 0 && rspace > 0
@@ -237,8 +234,6 @@ void Partition0() {
             // |   >)   (<   | - Enclosing loop
             p += base_branch_cost * gpt[st + 1][en - 1][PT_U2];
           }
-
-
           // |  >m)   (m<  | Terminal mismatch - Enclosing loop
           if (lspace > 1 && rspace > 1)
             p += base_branch_cost * gpt[st + 2][en - 2][PT_U2] *
