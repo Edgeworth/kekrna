@@ -98,7 +98,7 @@ public:
 
   Fuzzer(primary_t r_, const cfg_t& cfg_, const energy::EnergyModelPtr em_,
       const bridge::Rnastructure& rnastructure_)
-      : r(std::move(r_)), cfg(cfg_),
+      : N(int(r_.size())), r(std::move(r_)), cfg(cfg_),
         em(cfg.random_model ? energy::LoadRandomEnergyModel(cfg.seed) : em_),
         rnastructure(rnastructure_) {}
 
@@ -126,6 +126,7 @@ public:
   }
 
 private:
+  const int N;
   const primary_t r;
   const cfg_t cfg;
   const energy::EnergyModelPtr em;
@@ -259,11 +260,9 @@ private:
 
   error_t CheckDpTables() {
     error_t errors;
-    int st = 0, en = 0, a = 0;
-    const int N = int(r.size());
-    for (st = N - 1; st >= 0; --st) {
-      for (en = st + HAIRPIN_MIN_SZ + 1; en < N; ++en) {
-        for (a = 0; a < DP_SIZE; ++a) {
+    for (int st = N - 1; st >= 0; --st) {
+      for (int en = st + HAIRPIN_MIN_SZ + 1; en < N; ++en) {
+        for (int a = 0; a < DP_SIZE; ++a) {
           const auto kekrna0 = kekrna_dps[0][st][en][a];
           for (int i = 0; i < int(kekrna_dps.size()); ++i) {
             const auto kekrnai = kekrna_dps[i][st][en][a];
@@ -353,10 +352,27 @@ private:
           CheckSuboptimalResultPair(brute_subopt, kekrna_subopt), "brute vs kekrna suboptimal:"));
     }
 
-    // TODO partition
     if (cfg.partition) {
+      auto brute_partition = PartitionBruteForce(r, *em);
+      auto kekrna_partition = ctx.Partition();
 
+      // TODO floating point comparison
+      if (brute_partition.first.q != kekrna_partition.q) {
+        errors.push_back(sfmt("q: brute partition %lf != kekrna %lf",
+            brute_partition.first.q, kekrna_partition.q));
+      }
+
+      for (int st = 0; st < N; ++st) {
+        for (int en = 0; en < N; ++en) {
+          if (brute_partition.first.p[st][en][0] != kekrna_partition.p[st][en][0]) {
+            errors.push_back(sfmt("kekrna %d %d: %lf != brute force %lf",  st, en,
+                kekrna_partition.p[st][en][0], brute_partition.first.p[st][en][0]));
+            goto loopend;
+          }
+        }
+      }
     }
+    loopend:
     return errors;
   }
 };
