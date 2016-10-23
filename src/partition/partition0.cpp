@@ -109,8 +109,7 @@ void Partition0() {
         const auto base11 = gpt[st + 1][piv - 1][PT_P] * Boltzmann(gpc.augubranch[st1b][pl1b]);
 
         // (   )<   > - U, U_WC?, U_GU?
-        u2 += base00 * gpt[piv +
-            1][en][PT_U];  // TODO accesses like this when add stuff in other part of table
+        u2 += base00 * gpt[piv + 1][en][PT_U];
         auto val = base00 + base00 * gpt[piv + 1][en][PT_U];
         u += val;
         if (IsGu(stb, pb)) gu += val;
@@ -161,8 +160,8 @@ void Partition0() {
           u += val;
           u2 += val;
           if (pr1b == G || pr1b == U) {
-            val =
-                base00 * Boltzmann(gem.stack[pb][pr1b][pr1b ^ 1][stb]) * gpt[piv + 1][en][PT_U_GU];
+            val = base00 * Boltzmann(
+                gem.stack[pb][pr1b][pr1b ^ 1][stb]) * gpt[piv + 1][en][PT_U_GU];
             u += val;
             u2 += val;
           }
@@ -178,7 +177,7 @@ void Partition0() {
 
   // Fill the left triangle.
   // The meaning of the tables changes here:
-  // U, U2: any table index with en < st must have a loop enclosing (en, st)
+  // U, U2, WC, GU, RCOAX: any table index with en < st must have a loop enclosing (en, st)
   for (int st = 0; st < N; ++st) {
     for (int en = 0; en < st; ++en) {
       //        ..)...(..
@@ -238,7 +237,7 @@ void Partition0() {
           // When neither the left block nor the right block straddles the border
           // we don't get enclosing loops sometimes. So check that with |not_straddling|.
           const bool straddling = tpiv != (N - 1);
-          const bool left_dot_straddling = straddling && tpiv != 0;  // Can't split a dot.
+          const bool left_dot_straddling = straddling && tpiv != N;  // Can't split a dot.
           const bool right_dot_straddling = straddling && tpiv != N - 2;  // Can't split a dot.
           const bool left_not_straddling = tpiv < N;  // Implies lspace > 1
           const bool right_not_straddling = tpiv >= N - 1;  // Implies rspace > 1
@@ -335,82 +334,99 @@ void Partition0() {
       }
       penergy_t u = 0.0, u2 = 0.0, rcoax = 0.0, wc = 0.0, gu = 0.0;
       // Update unpaired.
-      // Choose |st| to be unpaired.
-      if (st + 1 < en) {
+      // Choose |st| to be unpaired, but only if we can maintain the constraint that we have
+      // an enclosing loop formed.
+      if (st + 1 < N) {
         u += gpt[st + 1][en][PT_U];
         u2 += gpt[st + 1][en][PT_U2];
       }
 
-      for (int piv = st + HAIRPIN_MIN_SZ + 1; piv <= en; ++piv) {
-        //   (   .   )<   (
-        // stb pl1b pb   pr1b
-        const auto pb = gr[piv], pl1b = gr[piv - 1];
+      for (int tpiv = st + HAIRPIN_MIN_SZ + 1; tpiv <= en + N; ++tpiv) {
+        const int pl = FastMod(tpiv - 1, N), piv = FastMod(tpiv, N), pr = FastMod(tpiv + 1, N);
+        const auto pb = gr[piv], pl1b = gr[pl], prb = gr[pr];
         // baseAB indicates A bases left unpaired on the left, B bases left unpaired on the right.
         const auto base00 = gpt[st][piv][PT_P] * Boltzmann(gpc.augubranch[stb][pb]);
-        const auto base01 = gpt[st][piv - 1][PT_P] * Boltzmann(gpc.augubranch[stb][pl1b]);
-        const auto base10 = gpt[st + 1][piv][PT_P] * Boltzmann(gpc.augubranch[st1b][pb]);
-        const auto base11 = gpt[st + 1][piv - 1][PT_P] * Boltzmann(gpc.augubranch[st1b][pl1b]);
+        const auto base01 = gpt[st][pl][PT_P] * Boltzmann(gpc.augubranch[stb][pl1b]);
 
-        // (   )<   > - U, U_WC?, U_GU?
-        u2 += base00 * gpt[piv +
-            1][en][PT_U];  // TODO accesses like this when add stuff in other part of table
-        auto val = base00 + base00 * gpt[piv + 1][en][PT_U];
-        u += val;
-        if (IsGu(stb, pb)) gu += val;
-        else wc += val;
+        // Must have an enclosing loop.
+        const bool straddling = tpiv != N - 1;
+        const bool dot_straddling = straddling && tpiv != N;
 
-        // (   )3<   > 3' - U
-        val = base01 * Boltzmann(gem.dangle3[pl1b][pb][stb]);
-        u += val;
-        val *= gpt[piv + 1][en][PT_U];
-        u += val;
-        u2 += val;
+        // |  ).  >>   <(   ).<(   | Right coax backward
+        // Guaranteed st > 0, otherwise st = en = 0
+        auto val = base01 * Boltzmann(gem.MismatchCoaxial(pl1b, pb, gr[st - 1], stb));
+        rcoax += val;
+        rcoax += val * gpt[pr][en][PT_U];
 
-        // 5(   )<   > 5' - U
-        val = base10 * Boltzmann(gem.dangle5[pb][stb][st1b]);
-        u += val;
-        val *= gpt[piv + 1][en][PT_U];
-        u += val;
-        u2 += val;
+        if (straddling) {
+          // |  >>   <(   )<  |
+          u2 += base00 * gpt[pr][en][PT_U];
+          val = base00 + base00 * gpt[pr][en][PT_U];
+          u += val;
+          if (IsGu(stb, pb)) gu += val;
+          else wc += val;
 
-        // .(   ).<   > Terminal mismatch - U
-        val = base11 * Boltzmann(gem.terminal[pl1b][pb][stb][st1b]);
-        u += val;
-        val *= gpt[piv + 1][en][PT_U];
-        u += val;
-        u2 += val;
-
-        // .(   ).<(   ) > Left coax - U
-        val = base11 * Boltzmann(gem.MismatchCoaxial(pl1b, pb, stb, st1b));
-        val = val * (gpt[piv + 1][en][PT_U_WC] + gpt[piv + 1][en][PT_U_GU]);
-        u += val;
-        u2 += val;
-
-        // (   ).<(   ). > Right coax forward and backward
-        val = base01 * gpt[piv + 1][en][PT_U_RCOAX];
-        u += val;
-        u2 += val;
-        if (st > 0) {
-          val = base01 * Boltzmann(gem.MismatchCoaxial(pl1b, pb, gr[st - 1], stb));
-          rcoax += val;
-          rcoax += val * gpt[piv + 1][en][PT_U];
-        }
-
-        // There has to be remaining bases to even have a chance at these cases.
-        if (piv < en) {
-          const auto pr1b = gr[piv + 1];
-          // (   )<(   ) > Flush coax - U
-          val = base00 * Boltzmann(gem.stack[pb][pr1b][pr1b ^ 3][stb]) * gpt[piv + 1][en][PT_U_WC];
+          // There has to be remaining bases to even have a chance at these cases.
+          // |  )  >>   <(   )<(  | Flush coax
+          // straddling
+          val = base00 * Boltzmann(gem.stack[pb][prb][prb ^ 3][stb]) * gpt[pr][en][PT_U_WC];
           u += val;
           u2 += val;
-          if (pr1b == G || pr1b == U) {
-            val =
-                base00 * Boltzmann(gem.stack[pb][pr1b][pr1b ^ 1][stb]) * gpt[piv + 1][en][PT_U_GU];
+          if (prb == G || prb == U) {
+            val = base00 * Boltzmann(
+                gem.stack[pb][prb][prb ^ 1][stb]) * gpt[pr][en][PT_U_GU];
+            u += val;
+            u2 += val;
+          }
+        }
+
+        if (dot_straddling) {
+          // |  >>   <(   )3<  | 3'
+          val = base01 * Boltzmann(gem.dangle3[pl1b][pb][stb]);
+          u += val;
+          val *= gpt[pr][en][PT_U];
+          u += val;
+          u2 += val;
+
+          // |  ).  >>   <(   ).<(   | Right coax forward
+          // dot_stradling
+          val = base01 * gpt[pr][en][PT_U_RCOAX];
+          u += val;
+          u2 += val;
+        }
+
+        if (lspace) {
+          const auto base10 = gpt[st + 1][piv][PT_P] * Boltzmann(gpc.augubranch[st1b][pb]);
+          const auto base11 = gpt[st + 1][pl][PT_P] * Boltzmann(gpc.augubranch[st1b][pl1b]);
+
+          if (straddling) {
+            // |  >>   <5(   )<  | 5'
+            val = base10 * Boltzmann(gem.dangle5[pb][stb][st1b]);
+            u += val;
+            val *= gpt[pr][en][PT_U];
+            u += val;
+            u2 += val;
+          }
+
+          if (dot_straddling) {
+            // |  >>   <.(   ).<  | Terminal mismatch
+            // lspace > 0 && dot_straddling
+            val = base11 * Boltzmann(gem.terminal[pl1b][pb][stb][st1b]);
+            u += val;
+            val *= gpt[pr][en][PT_U];
+            u += val;
+            u2 += val;
+
+            // |  )>>   <.(   ).<(  | Left coax
+            // lspace > 0 && dot_straddling
+            val = base11 * Boltzmann(gem.MismatchCoaxial(pl1b, pb, stb, st1b));
+            val = val * (gpt[pr][en][PT_U_WC] + gpt[pr][en][PT_U_GU]);
             u += val;
             u2 += val;
           }
         }
       }
+
       gpt[st][en][PT_U] = u;
       gpt[st][en][PT_U2] = u2;
       gpt[st][en][PT_U_WC] = wc;
