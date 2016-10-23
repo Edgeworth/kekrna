@@ -26,7 +26,6 @@ using energy::gpc;
 using energy::Boltzmann;
 
 void Partition0() {
-  // TODO do enclosing stuff
   const int N = int(gr.size());
   static_assert(
       HAIRPIN_MIN_SZ >= 2, "Minimum hairpin size >= 2 is relied upon in some expressions.");
@@ -39,13 +38,12 @@ void Partition0() {
       if (energy::ViableFoldingPair(st, en)) {
         penergy_t p = 0.0;
         const int max_inter = std::min(TWOLOOP_MAX_SZ, en - st - HAIRPIN_MIN_SZ - 3);
-        for (int ist = st + 1; ist < st + max_inter + 2; ++ist)  // TODO not accurate
+        for (int ist = st + 1; ist < st + max_inter + 2; ++ist)  // TODO lyngso's ?
           for (int ien = en - max_inter + ist - st - 2; ien < en; ++ien)
             p += Boltzmann(energy::FastTwoLoop(st, en, ist, ien)) * gpt[ist][ien][PT_P];
         // Hairpin loops.
         p += Boltzmann(gem.Hairpin(gr, st, en));
 
-        // Multiloops. Look at range [st + 1, en - 1].
         // Cost for initiation + one branch. Include AU/GU penalty for ending multiloop helix.
         const auto base_branch_cost = Boltzmann(gpc.augubranch[stb][enb] + gem.multiloop_hack_a);
 
@@ -62,8 +60,6 @@ void Partition0() {
         for (int piv = st + HAIRPIN_MIN_SZ + 2; piv < en - HAIRPIN_MIN_SZ - 2; ++piv) {
           // Paired coaxial stacking cases:
           base_t pl1b = gr[piv - 1], plb = gr[piv], prb = gr[piv + 1], pr1b = gr[piv + 2];
-          //   (   .   (   .   .   .   )   .   |   .   (   .   .   .   )   .   )
-          // stb st1b st2b          pl1b  plb     prb  pr1b         en2b en1b enb
 
           // (.(   )   .) Left outer coax - P
           const auto outer_coax = gem.MismatchCoaxial(stb, st1b, en1b, enb);
@@ -195,36 +191,59 @@ void Partition0() {
         penergy_t p = 0.0;
         const int ost_max = std::min(st + TWOLOOP_MAX_SZ + 2, N);
         for (int ost = st + 1; ost < ost_max; ++ost) {
-          const int oen_min = std::min(en - TWOLOOP_MAX_SZ - 2 + (ost - st - 1), 0);
-          for (int oen = en - 1; oen > oen_min; --oen)
+          const int oen_min = std::max(en - TWOLOOP_MAX_SZ - 1 + (ost - st - 1), 0);
+          for (int oen = en - 1; oen >= oen_min; --oen)
             p += Boltzmann(energy::FastTwoLoop(oen, ost, en, st)) * gpt[ost][oen][PT_P];
         }
 
-        // Try being an exterior loop - coax cases handled in the loop below.
-        // TODO try to merge all the conditionals here
-        p += Boltzmann(gem.AuGuPenalty(enb, stb));
-        p += gpt[st + 1][N - 1][PT_U];  // Left filled, right empty.
-        if (rspace) {
-          p += gpt[0][en - 1][PT_U];  // Left empty, right filled.
-          p += gpt[st + 1][N - 1][PT_U] * gpt[0][en - 1][PT_U];  // Both filled.
-        }
-
         const auto base_branch_cost = Boltzmann(gpc.augubranch[stb][enb] + gem.multiloop_hack_a);
-        // Enclosing cases:
-        // |   >)   (<   |
-        if (lspace && rspace) p += base_branch_cost * gpt[st + 1][en - 1][PT_U2];
-        // |   >)   (3<  | 3'
-        if (lspace > 1 && rspace)
-          p += base_branch_cost * gpt[st + 2][en - 1][PT_U2] *
-              Boltzmann(gem.dangle3[stb][st1b][enb]);
-        // |  >5)   (<   | 5'
-        if (lspace && rspace > 1)
-          p += base_branch_cost * gpt[st + 1][en - 2][PT_U2] *
-              Boltzmann(gem.dangle5[stb][en1b][enb]);
-        // |  >m)   (m<  | Terminal mismatch
-        if (lspace > 1 && rspace > 1)
-          p += base_branch_cost * gpt[st + 2][en - 2][PT_U2] *
-              Boltzmann(gem.terminal[stb][st1b][en1b][enb]);
+        // Try being an exterior loop - coax cases handled in the loop after this.
+        {
+          const auto augu = Boltzmann(gem.AuGuPenalty(enb, stb));
+          const auto left_exterior = gpt[st + 1][N - 1][PT_U] + 1.0;
+          const auto left1_exterior = lspace > 1 ? gpt[st + 2][N - 1][PT_U] + 1.0 : 1.0;
+          const auto right_exterior = rspace ? gpt[0][en - 1][PT_U] + 1.0 : 1.0;
+          const auto right1_exterior = rspace > 1 ? gpt[0][en - 2][PT_U] + 1.0 : 1.0;
+          // |<   >)   (<   >| - Exterior loop
+          p += augu * left_exterior * right_exterior;
+
+          if (lspace) {
+            // |<   >)   (3<   >| - Exterior loop
+            // lspace > 0
+            p += augu * left1_exterior * right_exterior * Boltzmann(gem.dangle3[stb][st1b][enb]);
+
+            // |  >5)   (<   | 5' - Enclosing loop
+            if (rspace > 1)
+              p += base_branch_cost * gpt[st + 1][en - 2][PT_U2] *
+                Boltzmann(gem.dangle5[stb][en1b][enb]);
+          }
+
+          if (rspace) {
+            // |<   >5)   (<   >| 5' - Exterior loop
+            // rspace > 0
+            p += augu * left_exterior * right1_exterior * Boltzmann(gem.dangle5[stb][en1b][enb]);
+
+            // |   >)   (3<  | 3' - Enclosing loop
+            if (lspace > 1)
+              p += base_branch_cost * gpt[st + 2][en - 1][PT_U2] *
+                  Boltzmann(gem.dangle3[stb][st1b][enb]);
+          }
+
+          if (lspace && rspace) {
+            // |<   >m)   (m<   >| Terminal mismatch - Exterior loop
+            // lspace > 0 && rspace > 0
+            p += augu * left1_exterior * right1_exterior *
+                Boltzmann(gem.terminal[stb][st1b][en1b][enb]);
+            // |   >)   (<   | - Enclosing loop
+            p += base_branch_cost * gpt[st + 1][en - 1][PT_U2];
+          }
+
+
+          // |  >m)   (m<  | Terminal mismatch - Enclosing loop
+          if (lspace > 1 && rspace > 1)
+            p += base_branch_cost * gpt[st + 2][en - 2][PT_U2] *
+                Boltzmann(gem.terminal[stb][st1b][en1b][enb]);
+        }
 
         // TODO merge if statements?
         const int limit = en - HAIRPIN_MIN_SZ - 2 + (en < st ? N : 0);
@@ -351,7 +370,6 @@ void Partition0() {
         // Must have an enclosing loop.
         const bool straddling = tpiv != N - 1;
         const bool dot_straddling = straddling && tpiv != N;
-
         // |  ).  >>   <(   ).<(   | Right coax backward
         // Guaranteed st > 0, otherwise st = en = 0
         auto val = base01 * Boltzmann(gem.MismatchCoaxial(pl1b, pb, gr[st - 1], stb));
@@ -365,7 +383,6 @@ void Partition0() {
           u += val;
           if (IsGu(stb, pb)) gu += val;
           else wc += val;
-
           // There has to be remaining bases to even have a chance at these cases.
           // |  )  >>   <(   )<(  | Flush coax
           // straddling
@@ -387,7 +404,6 @@ void Partition0() {
           val *= gpt[pr][en][PT_U];
           u += val;
           u2 += val;
-
           // |  ).  >>   <(   ).<(   | Right coax forward
           // dot_stradling
           val = base01 * gpt[pr][en][PT_U_RCOAX];
@@ -398,7 +414,6 @@ void Partition0() {
         if (lspace) {
           const auto base10 = gpt[st + 1][piv][PT_P] * Boltzmann(gpc.augubranch[st1b][pb]);
           const auto base11 = gpt[st + 1][pl][PT_P] * Boltzmann(gpc.augubranch[st1b][pl1b]);
-
           if (straddling) {
             // |  >>   <5(   )<  | 5'
             val = base10 * Boltzmann(gem.dangle5[pb][stb][st1b]);
@@ -407,7 +422,6 @@ void Partition0() {
             u += val;
             u2 += val;
           }
-
           if (dot_straddling) {
             // |  >>   <.(   ).<  | Terminal mismatch
             // lspace > 0 && dot_straddling
