@@ -138,29 +138,22 @@ void Partition0() {
         u += val;
         u2 += val;
 
-        // (   ).<(   ). > Right coax forward and backward
-        val = base01 * gpt[piv + 1][en][PT_U_RCOAX];
+        // (   )<.(   ). > Right coax forward and backward
+        val = base00 * gpt[piv + 1][en][PT_U_RCOAX];
         u += val;
         u2 += val;
-        if (st > 0) {
-          val = base01 * Boltzmann(gem.MismatchCoaxial(pl1b, pb, gr[st - 1], stb));
-          rcoax += val;
-          rcoax += val * gpt[piv + 1][en][PT_U];
-        }
+        val = base00 * Boltzmann(gem.MismatchCoaxial(pl1b, pb, stb, st1b));
+        rcoax += val;
+        rcoax += val * gpt[piv + 1][en][PT_U];
 
-        // There has to be remaining bases to even have a chance at these cases.
-        if (piv < en) {
-          const auto pr1b = gr[piv + 1];
-          // (   )<(   ) > Flush coax - U
-          val = base00 * Boltzmann(gem.stack[pb][pr1b][pr1b ^ 3][stb]) * gpt[piv + 1][en][PT_U_WC];
+        // (   )(<   ) > Flush coax - U
+        val = base01 * Boltzmann(gem.stack[pl1b][pb][pb ^ 3][stb]) * gpt[piv][en][PT_U_WC];
+        u += val;
+        u2 += val;
+        if (pb == G || pb == U) {
+          val = base01 * Boltzmann(gem.stack[pl1b][pb][pb ^ 1][stb]) * gpt[piv][en][PT_U_GU];
           u += val;
           u2 += val;
-          if (pr1b == G || pr1b == U) {
-            val = base00 * Boltzmann(
-                gem.stack[pb][pr1b][pr1b ^ 1][stb]) * gpt[piv + 1][en][PT_U_GU];
-            u += val;
-            u2 += val;
-          }
         }
       }
       gpt[st][en][PT_U] = u;
@@ -214,17 +207,15 @@ void Partition0() {
             // |<   >(   )3<   >| 3' - Exterior loop
             // lspace > 0
             p += augu * lext * r1ext * Boltzmann(gem.dangle3[stb][st1b][enb]);
-
             // |  >5)   (<   | 5' - Enclosing loop
             if (rspace > 1)
               p += base_branch_cost * gpt[st + 1][en - 2][PT_U2] *
-                Boltzmann(gem.dangle5[stb][en1b][enb]);
+                  Boltzmann(gem.dangle5[stb][en1b][enb]);
           }
           if (rspace) {
             // |<   >5(   )<   >| 5' - Exterior loop
             // rspace > 0
             p += augu * l1ext * rext * Boltzmann(gem.dangle5[stb][en1b][enb]);
-
             // |   >)   (3<  | 3' - Enclosing loop
             if (lspace > 1)
               p += base_branch_cost * gpt[st + 2][en - 1][PT_U2] *
@@ -260,7 +251,8 @@ void Partition0() {
           const bool right_not_straddling = tpiv >= N - 1;  // Implies rspace > 1
 
           if (lspace > 1 && rspace > 1 && straddling) {
-            const auto outer_coax = gem.MismatchCoaxial(stb, st1b, en1b, enb);  // TODO recomputation here
+            const auto outer_coax = gem.MismatchCoaxial(stb, st1b, en1b,
+                enb);  // TODO recomputation here
             // |  >.)   (.(   )<  | Enclosing loop - Left outer coax
             // lspace > 1 && rspace > 1 && enclosed
             p += base_branch_cost * gpt[st + 2][piv][PT_P] * gpt[pr][en - 2][PT_U] *
@@ -272,7 +264,8 @@ void Partition0() {
           }
 
           if (lspace && right_not_straddling) {
-            const auto outer_coax = gem.MismatchCoaxial(stb, st1b, en1b, enb);  // TODO recomputation here
+            const auto outer_coax = gem.MismatchCoaxial(stb, st1b, en1b,
+                enb);  // TODO recomputation here
             const auto lext = lspace > 1 ? gptext[st + 2][PTEXT_R] : 1.0;
             const auto rext = gptext[piv][PTEXT_L];
             // |<   >(   ).)   (.<   >| Exterior loop - Right outer coax
@@ -282,7 +275,8 @@ void Partition0() {
           }
 
           if (rspace && left_not_straddling) {
-            const auto outer_coax = gem.MismatchCoaxial(stb, st1b, en1b, enb);  // TODO recomputation here
+            const auto outer_coax = gem.MismatchCoaxial(stb, st1b, en1b,
+                enb);  // TODO recomputation here
             const auto lext = gptext[piv + 1][PTEXT_R];
             const auto rext = rspace > 1 ? gptext[en - 2][PTEXT_L] : 1.0;
             // |<   >.)   (.(   )<   >| Exterior loop - Left outer coax
@@ -364,11 +358,7 @@ void Partition0() {
         // Must have an enclosing loop.
         const bool straddling = tpiv != N - 1;
         const bool dot_straddling = straddling && tpiv != N;
-        // |  ).  >>   <(   ).<(   | Right coax backward
-        // Guaranteed st > 0, otherwise st = en = 0
-        auto val = base01 * Boltzmann(gem.MismatchCoaxial(pl1b, pb, gr[st - 1], stb));
-        rcoax += val;
-        rcoax += val * gpt[pr][en][PT_U];
+        penergy_t val = 0.0;
 
         if (straddling) {
           // |  >>   <(   )<  |
@@ -377,7 +367,6 @@ void Partition0() {
           u += val;
           if (IsGu(stb, pb)) gu += val;
           else wc += val;
-          // There has to be remaining bases to even have a chance at these cases.
           // |  )  >>   <(   )<(  | Flush coax
           // straddling
           val = base00 * Boltzmann(gem.stack[pb][prb][prb ^ 3][stb]) * gpt[pr][en][PT_U_WC];
@@ -398,9 +387,9 @@ void Partition0() {
           val *= gpt[pr][en][PT_U];
           u += val;
           u2 += val;
-          // |  ).  >>   <(   ).<(   | Right coax forward
+          // |  ).  >>   <(   )<.(   | Right coax forward
           // dot_stradling
-          val = base01 * gpt[pr][en][PT_U_RCOAX];
+          val = base00 * gpt[pr][en][PT_U_RCOAX];
           u += val;
           u2 += val;
         }
@@ -408,6 +397,7 @@ void Partition0() {
         if (lspace) {
           const auto base10 = gpt[st + 1][piv][PT_P] * Boltzmann(gpc.augubranch[st1b][pb]);
           const auto base11 = gpt[st + 1][pl][PT_P] * Boltzmann(gpc.augubranch[st1b][pl1b]);
+
           if (straddling) {
             // |  >>   <5(   )<  | 5'
             val = base10 * Boltzmann(gem.dangle5[pb][stb][st1b]);
@@ -416,6 +406,7 @@ void Partition0() {
             u += val;
             u2 += val;
           }
+
           if (dot_straddling) {
             // |  >>   <.(   ).<  | Terminal mismatch
             // lspace > 0 && dot_straddling
@@ -424,13 +415,16 @@ void Partition0() {
             val *= gpt[pr][en][PT_U];
             u += val;
             u2 += val;
-
             // |  )>>   <.(   ).<(  | Left coax
             // lspace > 0 && dot_straddling
             val = base11 * Boltzmann(gem.MismatchCoaxial(pl1b, pb, stb, st1b));
             val = val * (gpt[pr][en][PT_U_WC] + gpt[pr][en][PT_U_GU]);
             u += val;
             u2 += val;
+            // |  ).  >>   <(   )<.(   | Right coax backward
+            val = base11 * Boltzmann(gem.MismatchCoaxial(pl1b, pb, stb, st1b));
+            rcoax += val;
+            rcoax += val * gpt[pr][en][PT_U];
           }
         }
       }

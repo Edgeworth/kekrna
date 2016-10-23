@@ -15,7 +15,6 @@
 #include "partition/partition.h"
 #include "partition/partition_globals.h"
 #include "energy/energy_globals.h"
-#include "energy/fast_energy.h"
 
 namespace kekrna {
 namespace partition {
@@ -46,9 +45,11 @@ void Exterior() {
       else gptext[st][PTEXT_R_WC] += val;
 
       // (   )3<   > 3'
-      gptext[st][PTEXT_R] += base01 * Boltzmann(gem.dangle3[en1b][enb][stb]) * gptext[en + 1][PTEXT_R];
+      gptext[st][PTEXT_R] +=
+          base01 * Boltzmann(gem.dangle3[en1b][enb][stb]) * gptext[en + 1][PTEXT_R];
       // 5(   )<   > 5'
-      gptext[st][PTEXT_R] += base10 * Boltzmann(gem.dangle5[enb][stb][st1b]) * gptext[en + 1][PTEXT_R];
+      gptext[st][PTEXT_R] +=
+          base10 * Boltzmann(gem.dangle5[enb][stb][st1b]) * gptext[en + 1][PTEXT_R];
       // .(   ).<   > Terminal mismatch
       gptext[st][PTEXT_R] += base11 *
           Boltzmann(gem.terminal[en1b][enb][stb][st1b]) * gptext[en + 1][PTEXT_R];
@@ -57,22 +58,18 @@ void Exterior() {
       gptext[st][PTEXT_R] += val * gptext[en + 1][PTEXT_R_GU];
       gptext[st][PTEXT_R] += val * gptext[en + 1][PTEXT_R_WC];
 
-      // (   ).<(   ). > Right coax forward
-      gptext[st][PTEXT_R] += base01 * gptext[en + 1][PTEXT_R_RCOAX];
-      // (   ).<( * ). > Right coax backward
-      if (st > 0)
-        gptext[st][PTEXT_R_RCOAX] += base01 *
-            Boltzmann(gem.MismatchCoaxial(en1b, enb, gr[st - 1], stb)) * gptext[en + 1][PTEXT_R];
+      // (   )<.(   ). > Right coax forward
+      gptext[st][PTEXT_R] += base00 * gptext[en + 1][PTEXT_R_RCOAX];
+      // (   )<.( * ). > Right coax backward
+      gptext[st][PTEXT_R_RCOAX] += base11 *
+          Boltzmann(gem.MismatchCoaxial(en1b, enb, stb, st1b)) * gptext[en + 1][PTEXT_R];
 
-      if (en < N - 1) {
-        // (   )<(   ) > Flush coax
-        const auto enrb = gr[en + 1];
-        gptext[st][PTEXT_R] += base00 *
-            Boltzmann(gem.stack[enb][enrb][enrb ^ 3][stb]) * gptext[en + 1][PTEXT_R_WC];
-        if (enrb == G || enrb == U)
-          gptext[st][PTEXT_R] += base00 *
-              Boltzmann(gem.stack[enb][enrb][enrb ^ 1][stb]) * gptext[en + 1][PTEXT_R_GU];
-      }
+      // (   )(<   ) > Flush coax
+      gptext[st][PTEXT_R] += base01 *
+          Boltzmann(gem.stack[en1b][enb][enb ^ 3][stb]) * gptext[en][PTEXT_R_WC];
+      if (enb == G || enb == U)
+        gptext[st][PTEXT_R] += base01 *
+            Boltzmann(gem.stack[en1b][enb][enb ^ 1][stb]) * gptext[en][PTEXT_R_GU];
     }
   }
 
@@ -114,18 +111,14 @@ void Exterior() {
       gptext[en][PTEXT_L_LCOAX] += base11 *
           Boltzmann(gem.MismatchCoaxial(en1b, enb, stb, st1b)) * ptextl;
 
-      if (st) {
-        // < (   )>(   ) Flush coax
-        const auto stl1b = gr[st - 1];
-        gptext[en][PTEXT_L] += base00 *
-            Boltzmann(gem.stack[stl1b][stb][stl1b ^ 3][enb]) * ptextlwc;
-        if (stl1b == G || stl1b == U)
-          gptext[en][PTEXT_L] += base00 *
-              Boltzmann(gem.stack[stl1b][stb][stl1b ^ 1][enb]) * ptextlgu;
-      }
+      // < (   >)(   ) Flush coax
+      gptext[en][PTEXT_L] += base10 * Boltzmann(gem.stack[stb][st1b][stb ^ 3][enb]) * ptextlwc;
+      if (stb == G || stb == U)
+        gptext[en][PTEXT_L] += base10 * Boltzmann(gem.stack[stb][st1b][stb ^ 1][enb]) * ptextlgu;
     }
   }
 
+  printf("%lf %lf\n", gptext[N - 1][PTEXT_L], gptext[0][PTEXT_R]);
   assert(std::abs(gptext[N - 1][PTEXT_L] - gptext[0][PTEXT_R]) < 1e-6);
 }
 

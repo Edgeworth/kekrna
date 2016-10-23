@@ -317,9 +317,9 @@ private:
       if (kekrna_computeds[0].energy != kekrna_computeds[i].energy ||
           kekrna_computeds[0].energy != kekrna_ctd_efns[i] ||
           kekrna_computeds[0].energy != kekrna_optimal_efns[i])
-        errors.push_back(
-            sfmt("kekrna %d: %d (dp) %d (ctd efn) %d (efn) != mfe %d", kekrna_computeds[i].energy,
-                kekrna_ctd_efns[i], kekrna_optimal_efns[i], kekrna_computeds[0].energy));
+        errors.push_back(sfmt("kekrna %d: %d (dp) %d (ctd efn) %d (efn) != mfe %d", i,
+            kekrna_computeds[i].energy, kekrna_ctd_efns[i],
+            kekrna_optimal_efns[i], kekrna_computeds[0].energy));
     }
 
     return errors;

@@ -75,6 +75,7 @@ const int PT_MAX_BITS = 6;
 const int CTD_MAX_BITS = 4;
 constexpr int PT_MASK = (1 << PT_MAX_BITS) - 1;
 constexpr int CTD_MASK = (1 << CTD_MAX_BITS) - 1;
+
 struct substructure_id_t {
   constexpr static int BITS = (PT_MAX_BITS + CTD_MAX_BITS) * (1 << PT_MAX_BITS);
   constexpr static int BYTES = BITS / 8 + (BITS % 8 ? 1 : 0);
@@ -88,7 +89,8 @@ struct substructure_id_t {
 bool compute_partition;
 partition::partition_t partition;
 partition::probabilities_t probabilities;
-struct nothing_t {};
+struct nothing_t {
+};
 SplayMap<substructure_id_t, nothing_t> substructure_map;
 
 substructure_id_t WriteBits(int st, int en, int N, bool inside) {

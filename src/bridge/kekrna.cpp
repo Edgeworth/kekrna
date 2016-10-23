@@ -46,7 +46,8 @@ Kekrna::SuboptimalIntoVector(const primary_t& r, energy_t energy_delta) const {
   return Context(r, em, options).SuboptimalIntoVector(true, energy_delta, -1);
 }
 
-std::pair<partition::partition_t, partition::probabilities_t> Kekrna::Partition(const primary_t& r) const {
+std::pair<partition::partition_t, partition::probabilities_t>
+Kekrna::Partition(const primary_t& r) const {
   auto partition = Context(r, em, options).Partition();
   auto probabilities = partition::ComputeProbabilities(partition);
   return {std::move(partition), std::move(probabilities)};

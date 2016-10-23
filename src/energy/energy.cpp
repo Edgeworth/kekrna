@@ -40,7 +40,8 @@ energy_t MultiloopEnergy(computed_t& computed, bool compute_ctds, int st, int en
     num_unpaired += p[branch_st] - branch_st + 1;
 
     if (IsAuGu(r[branch_st], r[p[branch_st]])) {
-      if (s) s->AddNote(
+      if (s)
+        s->AddNote(
             "%de - opening AU/GU penalty at %d %d", em.augu_penalty, branch_st, p[branch_st]);
       energy += em.augu_penalty;
     }

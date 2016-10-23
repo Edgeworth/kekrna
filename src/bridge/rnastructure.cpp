@@ -15,7 +15,6 @@
 #include "bridge/rnastructure.h"
 
 #include "miles_rnastructure/include/alltrace.h"
-#include "miles_rnastructure/include/pfunction.h"
 
 namespace kekrna {
 namespace bridge {
