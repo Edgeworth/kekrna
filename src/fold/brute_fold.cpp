@@ -288,7 +288,7 @@ void InvokeBruteForce(const primary_t& r, const energy::EnergyModel& em,
   max_structures = max_structures_ == -1 ? MAX_STRUCTURES : max_structures_;
   compute_partition = compute_partition_;
   if (compute_partition_) {
-    partition.q = 0.0;
+    partition.q = 0;
     partition.p = array3d_t<penergy_t, 1>(r.size(), 0);
     probabilities = array3d_t<penergy_t, 1>(r.size(), 0);
   }

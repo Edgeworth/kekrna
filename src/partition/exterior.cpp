@@ -25,7 +25,7 @@ using energy::Boltzmann;
 
 void Exterior() {
   const int N = int(gr.size());
-  gptext[N][PTEXT_R] = 1.0;
+  gptext[N][PTEXT_R] = 1;
   for (int st = N - 1; st >= 0; --st) {
     // Case: No pair starting here
     gptext[st][PTEXT_R] += gptext[st + 1][PTEXT_R];
@@ -73,7 +73,7 @@ void Exterior() {
     }
   }
 
-  gptext[0][PTEXT_L] = 1.0;
+  gptext[0][PTEXT_L] = 1;
   for (int en = 1; en < N; ++en) {
     // Case: No pair ending here
     gptext[en][PTEXT_L] += gptext[en - 1][PTEXT_L];
@@ -83,10 +83,10 @@ void Exterior() {
       const auto base01 = gpt[st][en - 1][PT_P] * Boltzmann(gem.AuGuPenalty(stb, en1b));
       const auto base10 = gpt[st + 1][en][PT_P] * Boltzmann(gem.AuGuPenalty(st1b, enb));
       const auto base11 = gpt[st + 1][en - 1][PT_P] * Boltzmann(gem.AuGuPenalty(st1b, en1b));
-      penergy_t ptextl = 1.0;
-      penergy_t ptextlgu = 0.0;
-      penergy_t ptextlwc = 0.0;
-      penergy_t ptextllcoaxx = 0.0;
+      penergy_t ptextl{1};
+      penergy_t ptextlgu{0};
+      penergy_t ptextlwc{0};
+      penergy_t ptextllcoaxx{0};
 
       if (st) {
         ptextl = gptext[st - 1][PTEXT_L];

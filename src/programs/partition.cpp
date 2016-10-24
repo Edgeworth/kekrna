@@ -25,12 +25,12 @@ using namespace kekrna;
 void PrintPartition(const partition::partition_t& p,
     const std::string& name) {
   const int N = int(p.p.Size());
-  printf("%s total: %lf\n", name.c_str(), p.q);
+  std::cout << name << " total: " << p.q << std::endl;
   for (int i = 0; i < N; ++i) {
     for (int j = 0; j < N; ++j) {
-      printf("%lf ", p.p[i][j][0]);
+      std::cout << p.p[i][j][0] << ' ';
     }
-    printf("\n");
+    std::cout << '\n';
   }
 }
 
@@ -46,12 +46,11 @@ int main(int argc, char* argv[]) {
   const auto cutoff = atof(argparse.GetOption("cutoff").c_str());
   const bridge::Rnastructure rnastructure("extern/miles_rnastructure/data_tables/", false);
 
-  PrintPartition(rnastructure.Partition(primary).first, "RNAstructure");
+  //PrintPartition(rnastructure.Partition(primary).first, "RNAstructure");
+  PrintPartition(fold::PartitionBruteForce(primary, *em).first, "Brute force");
 
   Context ctx(parsing::StringToPrimary(pos.front()), em, ContextOptionsFromArgParse(argparse));
   PrintPartition(ctx.Partition(), "kekrna");
-
-  PrintPartition(fold::PartitionBruteForce(primary, *em).first, "Brute force");
 
 //  std::vector<std::tuple<double, int, int>> pairs;
 //  for (int i = 0; i < int(primary.size()); ++i) {

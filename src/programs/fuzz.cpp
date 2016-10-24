@@ -93,7 +93,7 @@ cfg_t CfgFromArgParse(const ArgParse& argparse) {
 }
 
 inline bool equ(penergy_t a, penergy_t b) {
-  return std::abs(a - b) < 1.0e-9;
+  return std::abs(a - b) < 1.0e-6;
 }
 
 class Fuzzer {
@@ -361,14 +361,14 @@ private:
       auto kekrna_partition = ctx.Partition();
 
       if (!equ(brute_partition.first.q, kekrna_partition.q)) {
-        errors.push_back(sfmt("q: brute partition %lf != kekrna %lf",
+        errors.push_back(sfmt("q: brute partition %Lf != kekrna %Lf",
             brute_partition.first.q, kekrna_partition.q));
       }
 
       for (int st = 0; st < N; ++st) {
         for (int en = 0; en < N; ++en) {
           if (!equ(brute_partition.first.p[st][en][0], kekrna_partition.p[st][en][0])) {
-            errors.push_back(sfmt("kekrna %d %d: %lf != brute force %lf", st, en,
+            errors.push_back(sfmt("kekrna %d %d: %Lf != brute force %Lf", st, en,
                 kekrna_partition.p[st][en][0], brute_partition.first.p[st][en][0]));
             goto loopend;
           }

@@ -36,7 +36,7 @@ void Partition0() {
 
       //if (CanPair(stb, enb)) {  // TODO lonely pairs?
       if (energy::ViableFoldingPair(st, en)) {
-        penergy_t p = 0.0;
+        penergy_t p{0};
         const int max_inter = std::min(TWOLOOP_MAX_SZ, en - st - HAIRPIN_MIN_SZ - 3);
         for (int ist = st + 1; ist < st + max_inter + 2; ++ist)  // TODO lyngso's ?
           for (int ien = en - max_inter + ist - st - 2; ien < en; ++ien)
@@ -86,7 +86,7 @@ void Partition0() {
 
         gpt[st][en][PT_P] = p;
       }
-      penergy_t u = 0.0, u2 = 0.0, rcoax = 0.0, wc = 0.0, gu = 0.0;
+      penergy_t u{0}, u2{0}, rcoax{0}, wc{0}, gu{0};
       // Update unpaired.
       // Choose |st| to be unpaired.
       if (st + 1 < en) {
@@ -184,7 +184,7 @@ void Partition0() {
 
       //if (CanPair(enb, stb)) {  // TODO lonely pairs?
       if (energy::ViableFoldingPair(en, st)) {
-        penergy_t p = 0.0;
+        penergy_t p{0};
         const int ost_max = std::min(st + TWOLOOP_MAX_SZ + 2, N);
         for (int ost = st + 1; ost < ost_max; ++ost) {
           const int oen_min = std::max(en - TWOLOOP_MAX_SZ - 1 + (ost - st - 1), 0);
@@ -198,9 +198,9 @@ void Partition0() {
         {
           const auto augu = Boltzmann(gem.AuGuPenalty(enb, stb));
           const auto rext = gptext[st + 1][PTEXT_R];
-          const auto r1ext = lspace > 1 ? gptext[st + 2][PTEXT_R] : 1.0;
-          const auto lext = rspace ? gptext[en - 1][PTEXT_L] : 1.0;
-          const auto l1ext = rspace > 1 ? gptext[en - 2][PTEXT_L] : 1.0;
+          const auto r1ext = lspace > 1 ? gptext[st + 2][PTEXT_R] : penergy_t{1};
+          const auto lext = rspace ? gptext[en - 1][PTEXT_L] : penergy_t{1};
+          const auto l1ext = rspace > 1 ? gptext[en - 2][PTEXT_L] : penergy_t{1};
 
           // |<   >)   (<   >| - Exterior loop
           p += augu * lext * rext;
@@ -263,7 +263,7 @@ void Partition0() {
             }
 
             if (right_formable) {
-              const auto lpext = piv > 0 ? gptext[piv - 1][PTEXT_L] : 1.0;
+              const auto lpext = piv > 0 ? gptext[piv - 1][PTEXT_L] : penergy_t{1};
               // |<   >.(   ).)   (<   >| Exterior loop - Right left coax
               // rspace > 1 && not enclosed
               p += gpt[pr][en - 2][PT_P] * lpext * rext * Boltzmann(gem.AuGuPenalty(stb, enb) +
@@ -335,7 +335,7 @@ void Partition0() {
 
         gpt[st][en][PT_P] = p;
       }
-      penergy_t u = 0.0, u2 = 0.0, rcoax = 0.0, wc = 0.0, gu = 0.0;
+      penergy_t u{0}, u2{0}, rcoax{0}, wc{0}, gu{0};
       // Update unpaired.
       // Choose |st| to be unpaired, but only if we can maintain the constraint that we have
       // an enclosing loop formed.
@@ -354,7 +354,7 @@ void Partition0() {
         // Must have an enclosing loop.
         const bool straddling = tpiv != N - 1;
         const bool dot_straddling = straddling && tpiv != N;
-        penergy_t val = 0.0;
+        penergy_t val{0};
 
         if (straddling) {
           // |  >>   <(   )<  |
