@@ -126,6 +126,7 @@ energy_t FastTwoLoop(int ost, int oen, int ist, int ien) {
 
   static_assert(
       TWOLOOP_MAX_SZ <= EnergyModel::INITIATION_CACHE_SZ, "initiation cache not large enough");
+  assert(toplen + botlen < EnergyModel::INITIATION_CACHE_SZ);
   energy_t energy = gem.internal_init[toplen + botlen] +
       std::min(std::abs(toplen - botlen) * gem.internal_asym, NINIO_MAX_ASYM);
 

@@ -15,7 +15,7 @@
 #include "partition/partition.h"
 #include "partition/partition_globals.h"
 #include "energy/energy_globals.h"
-
+#include "parsing.h"
 namespace kekrna {
 namespace partition {
 namespace internal {
@@ -83,10 +83,17 @@ void Exterior() {
       const auto base01 = gpt[st][en - 1][PT_P] * Boltzmann(gem.AuGuPenalty(stb, en1b));
       const auto base10 = gpt[st + 1][en][PT_P] * Boltzmann(gem.AuGuPenalty(st1b, enb));
       const auto base11 = gpt[st + 1][en - 1][PT_P] * Boltzmann(gem.AuGuPenalty(st1b, en1b));
-      const auto ptextl = st ? gptext[st - 1][PTEXT_L] : 1.0;
-      const auto ptextlgu = st ? gptext[st - 1][PTEXT_L_GU] : 0.0;
-      const auto ptextlwc = st ? gptext[st - 1][PTEXT_L_WC] : 0.0;
-      const auto ptextllcoaxx = st ? gptext[st - 1][PTEXT_L_LCOAX] : 0.0;
+      penergy_t ptextl = 1.0;
+      penergy_t ptextlgu = 0.0;
+      penergy_t ptextlwc = 0.0;
+      penergy_t ptextllcoaxx = 0.0;
+
+      if (st) {
+        ptextl = gptext[st - 1][PTEXT_L];
+        ptextlgu = gptext[st - 1][PTEXT_L_GU];
+        ptextlwc = gptext[st - 1][PTEXT_L_WC];
+        ptextllcoaxx = gptext[st - 1][PTEXT_L_LCOAX];
+      }
 
       // <   >(   )
       auto val = base00 * ptextl;
@@ -96,9 +103,9 @@ void Exterior() {
 
       // <   >(   )3 3'
       gptext[en][PTEXT_L] += base01 * Boltzmann(gem.dangle3[en1b][enb][stb]) * ptextl;
-      // 5(   )<   > 5'
+      // <   >5(   ) 5'
       gptext[en][PTEXT_L] += base10 * Boltzmann(gem.dangle5[enb][stb][st1b]) * ptextl;
-      // .(   ).<   > Terminal mismatch
+      // <   >.(   ). Terminal mismatch
       gptext[en][PTEXT_L] += base11 * Boltzmann(gem.terminal[en1b][enb][stb][st1b]) * ptextl;
       // <  (   )>.(   ). Right coax
       val = base11 * Boltzmann(gem.MismatchCoaxial(en1b, enb, stb, st1b));
@@ -112,14 +119,15 @@ void Exterior() {
           Boltzmann(gem.MismatchCoaxial(en1b, enb, stb, st1b)) * ptextl;
 
       // < (   >)(   ) Flush coax
-      gptext[en][PTEXT_L] += base10 * Boltzmann(gem.stack[stb][st1b][stb ^ 3][enb]) * ptextlwc;
+      gptext[en][PTEXT_L] += base10 * Boltzmann(
+          gem.stack[stb][st1b][enb][stb ^ 3]) * gptext[st][PTEXT_L_WC];
       if (stb == G || stb == U)
-        gptext[en][PTEXT_L] += base10 * Boltzmann(gem.stack[stb][st1b][stb ^ 1][enb]) * ptextlgu;
+        gptext[en][PTEXT_L] += base10 * Boltzmann(
+            gem.stack[stb][st1b][enb][stb ^ 1]) * gptext[st][PTEXT_L_GU];
     }
   }
 
-  printf("%lf %lf\n", gptext[N - 1][PTEXT_L], gptext[0][PTEXT_R]);
-  assert(std::abs(gptext[N - 1][PTEXT_L] - gptext[0][PTEXT_R]) < 1e-6);
+  assert(std::abs(gptext[N - 1][PTEXT_L] - gptext[0][PTEXT_R]) < 1e-8);
 }
 
 }
