@@ -128,7 +128,7 @@ partition::partition_t Context::Partition() {
       partition::internal::Partition0();
       break;
     case context_opt_t::PartitionAlg::BRUTE:
-      verify_expr(false, "not implemented yet");  // TODO implement
+      return fold::PartitionBruteForce(r, *em).first;
   }
   const auto& gpt = partition::internal::gpt;
   const int size = int(r.size());

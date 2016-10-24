@@ -44,7 +44,6 @@ enum : int8_t {
   PTEXT_SIZE
 };
 
-// TODO rename this probability or something
 typedef array3d_t<penergy_t, 1> probabilities_t;
 
 struct partition_t {
