@@ -61,9 +61,9 @@ defs = {
 if args.use_mpfr:
   defs['PARTITION_MPFR'] = 'ON'
 
-print('Remember to pass the -r option if you flip the -m option.')
-
 build_dir = os.path.join('build', defs['CMAKE_CXX_COMPILER'] + '-' + defs['CMAKE_BUILD_TYPE'])
+if defs['PARTITION_MPFR'] == 'ON':
+  build_dir += '-mpfr'
 regenerate = args.regenerate
 
 if regenerate and os.path.exists(build_dir):
