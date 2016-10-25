@@ -139,7 +139,6 @@ void AddAllCombinations(int idx) {
           if (inside_new || outside_new) {
             energy_t inside_energy = energy::ComputeSubstructureEnergy(
                 computed, false, i, gp[i], energy::gem);  // TODO optimisation?
-
             if (inside_new) {
               partition.p[i][gp[i]][0] += energy::Boltzmann(inside_energy);
               substructure_map.Insert(inside_structure, nothing_t());

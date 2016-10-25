@@ -25,6 +25,7 @@ parser.add_argument(
 parser.add_argument('-c', '--use_clang', action='store_true', default=False, required=False)
 parser.add_argument('-a', '--use_afl', action='store_true', default=False, required=False)
 parser.add_argument('-d', '--dry', action='store_true', default=False, required=False)
+parser.add_argument('-m', '--use_mpfr', action='store_true', default=False, required=False)
 parser.add_argument('--compilers', type=str, nargs=2, required=False)
 parser.add_argument('-r', '--regenerate', action='store_true', default=False, required=False)
 parser.add_argument('targets', nargs='*', type=str)
@@ -53,8 +54,14 @@ elif args.compilers:
 defs = {
   'CMAKE_C_COMPILER': compilers[0],
   'CMAKE_CXX_COMPILER': compilers[1],
-  'CMAKE_BUILD_TYPE': args.type
+  'CMAKE_BUILD_TYPE': args.type,
+  'PARTITION_MPFR': 'OFF'
 }
+
+if args.use_mpfr:
+  defs['PARTITION_MPFR'] = 'ON'
+
+print('Remember to pass the -r option if you flip the -m option.')
 
 build_dir = os.path.join('build', defs['CMAKE_CXX_COMPILER'] + '-' + defs['CMAKE_BUILD_TYPE'])
 regenerate = args.regenerate

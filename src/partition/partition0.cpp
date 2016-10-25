@@ -190,7 +190,6 @@ void Partition0() {
           for (int oen = en - 1; oen >= oen_min; --oen)
             p += Boltzmann(energy::FastTwoLoop(oen, ost, en, st)) * gpt[ost][oen][PT_P];
         }
-
         const penergy_t base_branch_cost = Boltzmann(
             gpc.augubranch[stb][enb] + gem.multiloop_hack_a);
         const energy_t outer_coax = lspace && rspace ?
@@ -270,7 +269,7 @@ void Partition0() {
               // |<   >(   ))   (<   >| Exterior loop - Right flush coax
               // rspace > 0 && not enclosed
               p += gpt[piv][en - 1][PT_P] * lpext * rext * Boltzmann(gem.AuGuPenalty(stb, enb) +
-                  gem.AuGuPenalty(plb, en1b) + gem.stack[stb][plb][en1b][enb]);
+                  gem.AuGuPenalty(plb, en1b) + gem.stack[en1b][enb][stb][plb]);
 
               if (lspace) {
                 // |<   >(   ).)   (.<   >| Exterior loop - Right outer coax
@@ -344,11 +343,10 @@ void Partition0() {
               // |  >(   ))   (<  | Enclosing loop - Right flush coax
               // lspace > 0 && rspace > 0 && enclosed
               p += base_branch_cost * gpt[st + 1][piv][PT_U] * gpt[pr][en - 1][PT_P] *
-                  Boltzmann(gpc.augubranch[prb][en1b] + gem.stack[stb][prb][en1b][enb]);
+                  Boltzmann(gpc.augubranch[prb][en1b] + gem.stack[en1b][enb][stb][prb]);
             }
           }
         }
-
         gpt[st][en][PT_P] = p;
       }
       penergy_t u{0}, u2{0}, rcoax{0}, wc{0}, gu{0};
@@ -360,7 +358,7 @@ void Partition0() {
         u2 += gpt[st + 1][en][PT_U2];
       }
 
-      for (int tpiv = st; tpiv <= en + N; ++tpiv) {
+      for (int tpiv = st + 1; tpiv <= en + N; ++tpiv) {
         const int pl = FastMod(tpiv - 1, N), piv = FastMod(tpiv, N), pr = FastMod(tpiv + 1, N);
         const auto pb = gr[piv], pl1b = gr[pl], prb = gr[pr];
         // baseAB indicates A bases left unpaired on the left, B bases left unpaired on the right.
@@ -374,11 +372,18 @@ void Partition0() {
 
         if (straddling) {
           // |  >>   <(   )<  |
-          u2 += base00 * gpt[pr][en][PT_U];
-          val = base00 + base00 * gpt[pr][en][PT_U];
+          val = base00 * gpt[pr][en][PT_U];
+          u2 += val;
           u += val;
           if (IsGu(stb, pb)) gu += val;
           else wc += val;
+          // U must cross the boundary to have the rest of it be nothing.
+          if (tpiv >= N) {
+            u += base00;
+            if (IsGu(stb, pb)) gu += base00;
+            else wc += base00;
+          }
+
           // |  )  >>   <(   )<(  | Flush coax
           // straddling
           val = base00 * Boltzmann(gem.stack[pb][prb][prb ^ 3][stb]) * gpt[pr][en][PT_U_WC];
@@ -389,18 +394,18 @@ void Partition0() {
             u += val;
             u2 += val;
           }
+          // |  ).  >>   <(   )<.(   | Right coax forward
+          // stradling
+          val = base00 * gpt[pr][en][PT_U_RCOAX];
+          u += val;
+          u2 += val;
         }
 
         if (dot_straddling) {
           // |  >>   <(   )3<  | 3'
           val = base01 * Boltzmann(gem.dangle3[pl1b][pb][stb]);
-          u += val;
+          if (tpiv >= N) u += val;
           val *= gpt[pr][en][PT_U];
-          u += val;
-          u2 += val;
-          // |  ).  >>   <(   )<.(   | Right coax forward
-          // dot_stradling
-          val = base00 * gpt[pr][en][PT_U_RCOAX];
           u += val;
           u2 += val;
         }
@@ -412,7 +417,7 @@ void Partition0() {
           if (straddling) {
             // |  >>   <5(   )<  | 5'
             val = base10 * Boltzmann(gem.dangle5[pb][stb][st1b]);
-            u += val;
+            if (tpiv >= N) u += val;
             val *= gpt[pr][en][PT_U];
             u += val;
             u2 += val;
@@ -422,7 +427,7 @@ void Partition0() {
             // |  >>   <.(   ).<  | Terminal mismatch
             // lspace > 0 && dot_straddling
             val = base11 * Boltzmann(gem.terminal[pl1b][pb][stb][st1b]);
-            u += val;
+            if (tpiv >= N) u += val;
             val *= gpt[pr][en][PT_U];
             u += val;
             u2 += val;

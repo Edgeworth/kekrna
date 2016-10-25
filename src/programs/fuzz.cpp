@@ -17,6 +17,7 @@
 #include <cstdio>
 #include <random>
 #include <set>
+#include <sstream>
 #include "bridge/bridge.h"
 #include "bridge/kekrna.h"
 #include "bridge/rnastructure.h"
@@ -93,7 +94,7 @@ cfg_t CfgFromArgParse(const ArgParse& argparse) {
 }
 
 inline bool equ(penergy_t a, penergy_t b) {
-  return std::abs(a - b) < 1.0e-6;
+  return fabs(a - b) < EP;
 }
 
 class Fuzzer {
@@ -357,25 +358,30 @@ private:
     }
 
     if (cfg.partition) {
+      // Types for the partition function are meant to be a bit configurable, so use sstream here.
       auto brute_partition = PartitionBruteForce(r, *em);
       auto kekrna_partition = ctx.Partition();
 
       if (!equ(brute_partition.first.q, kekrna_partition.q)) {
-        errors.push_back(sfmt("q: brute partition %Lf != kekrna %Lf",
-            brute_partition.first.q, kekrna_partition.q));
+        std::stringstream sstream;
+        sstream << "q: brute partition " << brute_partition.first.q
+            << " != kekrna " << kekrna_partition.q << "; difference: "
+            << brute_partition.first.q - kekrna_partition.q;
+        errors.push_back(sstream.str());
       }
 
       for (int st = 0; st < N; ++st) {
         for (int en = 0; en < N; ++en) {
           if (!equ(brute_partition.first.p[st][en][0], kekrna_partition.p[st][en][0])) {
-            errors.push_back(sfmt("kekrna %d %d: %Lf != brute force %Lf", st, en,
-                kekrna_partition.p[st][en][0], brute_partition.first.p[st][en][0]));
-            goto loopend;
+            std::stringstream sstream;
+            sstream << "kekrna " << st << " " << en << ": " << kekrna_partition.p[st][en][0]
+                << " != brute force " << brute_partition.first.p[st][en][0] << "; difference: "
+                << brute_partition.first.p[st][en][0] - kekrna_partition.p[st][en][0];
+            errors.push_back(sstream.str());
           }
         }
       }
     }
-    loopend:
     return errors;
   }
 };
@@ -410,8 +416,6 @@ int main(int argc, char* argv[]) {
     while ((len = fread(buf, 1, sizeof(buf), stdin)) > 0)
       data += std::string(buf, len);
     if (data.size() > 0) {
-      // Disable brute force testing for AFL since it's too slow.
-      cfg.brute_cutoff = 0;
       cfg.seed = eng();
       Fuzzer fuzzer(parsing::StringToPrimary(data), cfg, t04em, rnastructure);
       const auto res = fuzzer.Run();

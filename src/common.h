@@ -24,6 +24,14 @@
 #include <tuple>
 #include <vector>
 
+#ifdef PARTITION_MPFR
+#include <boost/multiprecision/mpfr.hpp>
+inline void boost::throw_exception(const std::exception& e) {
+  fprintf(stderr, "Boost exception: %s\n", e.what());
+  std::abort();
+}
+#endif
+
 // Like assert, but can't be disabled.
 #define verify_expr(expr, ...)                        \
   do {                                                \
@@ -40,7 +48,14 @@ namespace kekrna {
 typedef int8_t base_t;
 typedef std::vector<base_t> primary_t;
 typedef int32_t energy_t;
-typedef long double penergy_t;  // TODO fixed point?
+
+#ifdef PARTITION_MPFR
+typedef boost::multiprecision::mpfr_float_1000 penergy_t;
+const penergy_t EP{1e-30};
+#else
+typedef double penergy_t;
+const penergy_t EP{1e-5};
+#endif
 
 enum Ctd : int8_t {
   CTD_NA,

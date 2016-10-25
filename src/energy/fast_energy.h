@@ -58,8 +58,7 @@ inline bool ViableFoldingPair(int st, int en) {
 
 inline penergy_t Boltzmann(energy_t energy) {
   if (energy >= CAP_E) return 0;
-  // TODO magic to optimise this?
-  return exp(double(energy) * (-1.0 / (10.0 * R * T)));
+  return exp(penergy_t(energy) * (penergy_t(-1) / penergy_t(10.0 * R * T)));
 }
 
 }
