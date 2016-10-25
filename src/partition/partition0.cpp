@@ -235,7 +235,7 @@ void Partition0() {
                 Boltzmann(gem.terminal[stb][st1b][en1b][enb]);
 
           const int limit = en + N;
-          for (int tpiv = st + 1; tpiv < limit; ++tpiv) {
+          for (int tpiv = st; tpiv <= limit; ++tpiv) {
             const int pl = FastMod(tpiv - 1, N), piv = FastMod(tpiv, N), pr = FastMod(tpiv + 1, N);
             base_t pl1b = gr[pl], plb = gr[piv], prb = gr[pr];
             const bool left_formable = tpiv < N && tpiv - st - 2 >= HAIRPIN_MIN_SZ;
@@ -282,8 +282,10 @@ void Partition0() {
         }
 
         // Enclosing loop cases.
+        // Can start at st + 2 because we need to forman enclosing loop.
+        // At worst the enclosing loop has to start at st + 1.
         const int limit = en + N;
-        for (int tpiv = st + 1; tpiv < limit; ++tpiv) {
+        for (int tpiv = st + 2; tpiv < limit; ++tpiv) {
           const int pl = FastMod(tpiv - 1, N), piv = FastMod(tpiv, N),
               pr = FastMod(tpiv + 1, N), pr1 = FastMod(tpiv + 2, N);
           // Left block is: [st, piv], Right block is: [piv + 1, en].
@@ -293,35 +295,31 @@ void Partition0() {
           const bool straddling = tpiv != (N - 1);
           // Left loop formable if not straddling, and is big enough or crosses over.
           const bool left_formable = straddling && (piv - st - 2 >= HAIRPIN_MIN_SZ || tpiv >= N);
-          const bool right_formable = straddling && (en - piv - 3 >= HAIRPIN_MIN_SZ || tpiv < N);
+          const bool right_formable = straddling && (en - piv - 3 >= HAIRPIN_MIN_SZ || tpiv < N - 1);
           const bool left_dot_formable = left_formable && tpiv != N;  // Can't split a dot.
           const bool right_dot_formable = right_formable && tpiv != N - 2;  // Can't split a dot.
 
-          // Usually these weird cases are handled by gpt[x][x] = 0, but in this one case
-          // st + 2 can cross over tpiv.
-          if (st + 2 < tpiv) {
-            if (lspace > 1 && rspace > 1) {
-              if (left_formable) {
-                // |  >.)   (.(   )<  | Enclosing loop - Left outer coax
-                // lspace > 1 && rspace > 1 && enclosed
-                p += base_branch_cost * gpt[st + 2][piv][PT_P] * gpt[pr][en - 2][PT_U] *
-                    Boltzmann(gpc.augubranch[st2b][plb] + outer_coax);
-              }
-
-              if (right_formable) {
-                // |  >(   ).)   (.<  | Enclosing loop - Right outer coax
-                // lspace > 1 && rspace > 1 && enclosed
-                p += base_branch_cost * gpt[st + 2][piv][PT_U] * gpt[pr][en - 2][PT_P] *
-                    Boltzmann(gpc.augubranch[prb][en2b] + outer_coax);
-              }
+          if (lspace > 1 && rspace > 1) {
+            if (left_formable) {
+              // |  >.)   (.(   )<  | Enclosing loop - Left outer coax
+              // lspace > 1 && rspace > 1 && enclosed
+              p += base_branch_cost * gpt[st + 2][piv][PT_P] * gpt[pr][en - 2][PT_U] *
+                  Boltzmann(gpc.augubranch[st2b][plb] + outer_coax);
             }
 
-            if (lspace > 1 && rspace && left_dot_formable) {
-              // |  >)   (.(   ).<  | Enclosing loop - Left right coax
-              // lspace > 1 && rspace > 0 && enclosed && no dot split
-              p += base_branch_cost * gpt[st + 2][pl][PT_P] * gpt[pr][en - 1][PT_U] * Boltzmann(
-                  gpc.augubranch[st2b][pl1b] + gem.MismatchCoaxial(pl1b, plb, st1b, st2b));
+            if (right_formable) {
+              // |  >(   ).)   (.<  | Enclosing loop - Right outer coax
+              // lspace > 1 && rspace > 1 && enclosed
+              p += base_branch_cost * gpt[st + 2][piv][PT_U] * gpt[pr][en - 2][PT_P] *
+                  Boltzmann(gpc.augubranch[prb][en2b] + outer_coax);
             }
+          }
+
+          if (lspace > 1 && rspace && left_dot_formable) {
+            // |  >)   (.(   ).<  | Enclosing loop - Left right coax
+            // lspace > 1 && rspace > 0 && enclosed && no dot split
+            p += base_branch_cost * gpt[st + 2][pl][PT_P] * gpt[pr][en - 1][PT_U] * Boltzmann(
+                gpc.augubranch[st2b][pl1b] + gem.MismatchCoaxial(pl1b, plb, st1b, st2b));
           }
 
           if (lspace && rspace > 1 && right_dot_formable) {
@@ -395,7 +393,7 @@ void Partition0() {
             u2 += val;
           }
           // |  ).  >>   <(   )<.(   | Right coax forward
-          // stradling
+          // straddling
           val = base00 * gpt[pr][en][PT_U_RCOAX];
           u += val;
           u2 += val;
@@ -439,7 +437,7 @@ void Partition0() {
             u2 += val;
             // |  ).  >>   <(   )<.(   | Right coax backward
             val = base11 * Boltzmann(gem.MismatchCoaxial(pl1b, pb, stb, st1b));
-            rcoax += val;
+            if (tpiv >= N) rcoax += val;
             rcoax += val * gpt[pr][en][PT_U];
           }
         }
