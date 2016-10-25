@@ -80,7 +80,7 @@ const energy_t CAP_E = 0x07070707;
 // Values affecting the energy model:
 const int HAIRPIN_MIN_SZ = 3;
 // N.B. This is for kcal/mol so it's not 8.315.
-const double R = 1.985877534e-3;
+const double R = 1.9872036e-3;
 // This is 37 degrees Celsius. Changing this is not a good idea.
 const double T = 310.15;
 // Ninio maximum asymmetry.

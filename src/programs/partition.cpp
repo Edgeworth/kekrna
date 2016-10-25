@@ -46,7 +46,7 @@ int main(int argc, char* argv[]) {
   const auto cutoff = atof(argparse.GetOption("cutoff").c_str());
   const bridge::Rnastructure rnastructure("extern/miles_rnastructure/data_tables/", false);
 
-  //PrintPartition(rnastructure.Partition(primary).first, "RNAstructure");
+  PrintPartition(rnastructure.Partition(primary).first, "RNAstructure");
   PrintPartition(fold::PartitionBruteForce(primary, *em).first, "Brute force");
 
   Context ctx(parsing::StringToPrimary(pos.front()), em, ContextOptionsFromArgParse(argparse));

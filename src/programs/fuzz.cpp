@@ -33,6 +33,7 @@ using namespace fold::internal;
 namespace {
 struct cfg_t {
   bool random_model = false;
+  bool rnastructure = false;
   uint_fast32_t seed = 0;
 
   bool subopt = true;
@@ -44,38 +45,46 @@ struct cfg_t {
   int brute_subopt_max = 100000;
 
   bool partition = true;
+  bool partition_rnastructure = false;
 
   std::string Describe() {
     std::string desc;
     if (random_model) desc += "random energy models";
-    else desc += "T04 energy model";
+    else desc += "specified energy model";
     if (subopt) {
       desc += " - testing suboptimal";
       if (subopt_rnastructure) desc += " (including rnastructure)";
       desc += sfmt(" max: %d delta: %d", subopt_max, subopt_delta);
     }
     desc += sfmt(" - brute cutoff: %d subopt-max: %d", brute_cutoff, brute_subopt_max);
-    if (partition) desc += " - testing partition";
+    if (partition) {
+      desc += " - testing partition";
+      if (partition_rnastructure) desc += " (including rnastructure)";
+    }
     return desc;
   }
 };
 
 const std::map<std::string, opt_t> CFG_OPTIONS = {
     {"random", opt_t("use random energy models (disables comparison to RNAstructure)")},
+    {"no-rnastructure", opt_t("disable rnastructure testing")},
     {"no-subopt", opt_t("whether to test suboptimal folding")},
     {"subopt-rnastructure", opt_t("test rnastructure suboptimal folding")},
-    {"subopt-max", opt_t("maximum number of substructures for subopt max-delta fuzz")},
-    {"subopt-delta", opt_t("delta for subopt delta fuzz")},
-    {"brute-cutoff", opt_t("maximum rna size to run brute force on")},
-    {"brute-subopt-max", opt_t("maximum number of substructures for brute force fuzz")},
+    {"subopt-max", opt_t("maximum number of substructures for subopt max-delta fuzz").Arg()},
+    {"subopt-delta", opt_t("delta for subopt delta fuzz").Arg()},
+    {"brute-cutoff", opt_t("maximum rna size to run brute force on").Arg()},
+    {"brute-subopt-max", opt_t("maximum number of substructures for brute force fuzz").Arg()},
     {"no-partition", opt_t("whether to test partition function")},
+    {"partition-rnastructure", opt_t("test rnastructure partition function")},
 };
 
 cfg_t CfgFromArgParse(const ArgParse& argparse) {
   cfg_t cfg;
   cfg.random_model = argparse.HasFlag("random");
+  cfg.rnastructure = !argparse.HasFlag("no-rnastructure");
   cfg.subopt = !argparse.HasFlag("no-subopt");
   cfg.subopt_rnastructure = argparse.HasFlag("subopt-rnastructure");
+  cfg.partition_rnastructure = argparse.HasFlag("partition-rnastructure");
   if (argparse.HasFlag("subopt-max"))
     cfg.subopt_max = atoi(argparse.GetOption("subopt-max").c_str());
   if (argparse.HasFlag("subopt-delta"))
@@ -90,6 +99,10 @@ cfg_t CfgFromArgParse(const ArgParse& argparse) {
       "suboptimal folding testing must be enabled to test rnastructure suboptimal folding");
   verify_expr(!(cfg.random_model && cfg.subopt_rnastructure),
       "cannot use a random energy model with rnastructure");
+  verify_expr(cfg.rnastructure || (!cfg.subopt_rnastructure && !cfg.partition_rnastructure),
+      "rnastructure must be enabled to use it for suboptimal or partition");
+  verify_expr(!cfg.random_model || !cfg.rnastructure,
+      "rnastructure testing does not support random models");
   return cfg;
 }
 
@@ -110,7 +123,7 @@ public:
   error_t Run() {
     error_t errors;
     AppendErrors(errors, MaybePrependHeader(KekrnaComputeAndCheckState(), "kekrna:"));
-    if (!cfg.random_model)
+    if (cfg.rnastructure)
       AppendErrors(errors, MaybePrependHeader(RnastructureComputeAndCheckState(), "rnastructure:"));
     AppendErrors(errors, MaybePrependHeader(CheckDpTables(), "dp tables:"));
     if (cfg.subopt) AppendErrors(errors, MaybePrependHeader(CheckSuboptimal(), "suboptimal:"));
@@ -118,11 +131,14 @@ public:
     if (int(r.size()) <= cfg.brute_cutoff)
       AppendErrors(errors, MaybePrependHeader(CheckBruteForce(), "brute force:"));
 
+    if (cfg.partition)
+      AppendErrors(errors, MaybePrependHeader(CheckPartition(), "partition:"));
+
     if (!errors.empty()) {
       if (cfg.random_model)
         errors.push_front(sfmt("Used random energy model with seed: %" PRIuFAST32 "\n", cfg.seed));
       else
-        errors.push_front(sfmt("Used T04 energy model"));
+        errors.push_front(sfmt("Used specified energy model"));
       errors = MaybePrependHeader(errors,
           sfmt("Difference on len %zu RNA %s:", r.size(), parsing::PrimaryToString(r).c_str()));
     }
@@ -279,7 +295,7 @@ private:
               goto loopend;
             }
           }
-          if (!cfg.random_model && (a == DP_P || a == DP_U)) {
+          if (cfg.rnastructure && (a == DP_P || a == DP_U)) {
             energy_t rnastructureval = a == DP_P ? rnastructure_dp.v.f(st + 1, en + 1)
                 : rnastructure_dp.w.f(st + 1, en + 1);
             if (((kekrna0 < CAP_E) != (rnastructureval < INFINITE_ENERGY - 1000) ||
@@ -358,10 +374,10 @@ private:
     }
 
     if (cfg.partition) {
-      // Types for the partition function are meant to be a bit configurable, so use sstream here.
-      auto brute_partition = PartitionBruteForce(r, *em);
       auto kekrna_partition = ctx.Partition();
 
+      auto brute_partition = PartitionBruteForce(r, *em);
+      // Types for the partition function are meant to be a bit configurable, so use sstream here.
       if (!equ(brute_partition.first.q, kekrna_partition.q)) {
         std::stringstream sstream;
         sstream << "q: brute partition " << brute_partition.first.q
@@ -377,6 +393,41 @@ private:
             sstream << "kekrna " << st << " " << en << ": " << kekrna_partition.p[st][en][0]
                 << " != brute force " << brute_partition.first.p[st][en][0] << "; difference: "
                 << brute_partition.first.p[st][en][0] - kekrna_partition.p[st][en][0];
+            errors.push_back(sstream.str());
+          }
+        }
+      }
+    }
+    return errors;
+  }
+
+  error_t CheckPartition() {
+    error_t errors;
+    context_opt_t options(
+        context_opt_t::TableAlg::TWO,
+        context_opt_t::SuboptimalAlg::ONE,
+        context_opt_t::PartitionAlg::ZERO);
+    Context ctx(r, em, options);
+    auto kekrna_partition = ctx.Partition();
+
+    if (cfg.partition_rnastructure) {
+      auto rnastructure_part = rnastructure.Partition(r);
+      // Types for the partition function are meant to be a bit configurable, so use sstream here.
+      if (!equ(rnastructure_part.first.q, kekrna_partition.q)) {
+        std::stringstream sstream;
+        sstream << "q: rnastructure partition " << rnastructure_part.first.q
+            << " != kekrna " << kekrna_partition.q << "; difference: "
+            << rnastructure_part.first.q - kekrna_partition.q;
+        errors.push_back(sstream.str());
+      }
+
+      for (int st = 0; st < N; ++st) {
+        for (int en = 0; en < N; ++en) {
+          if (!equ(rnastructure_part.first.p[st][en][0], kekrna_partition.p[st][en][0])) {
+            std::stringstream sstream;
+            sstream << "kekrna " << st << " " << en << ": " << kekrna_partition.p[st][en][0]
+                << " != rnastructure " << rnastructure_part.first.p[st][en][0] << "; difference: "
+                << rnastructure_part.first.p[st][en][0] - kekrna_partition.p[st][en][0];
             errors.push_back(sstream.str());
           }
         }
@@ -403,6 +454,8 @@ int main(int argc, char* argv[]) {
 
   auto cfg = CfgFromArgParse(argparse);
   const bool afl_mode = argparse.HasFlag("afl");
+  verify_expr(!cfg.rnastructure || !argparse.HasFlag("seed"),
+      "seed option incompatible with rnastructure testing");
 
   if (afl_mode) {
 // AFL mode.
