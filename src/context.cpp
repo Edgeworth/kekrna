@@ -22,6 +22,7 @@ namespace kekrna {
 
 constexpr context_opt_t::TableAlg context_opt_t::TABLE_ALGS[];
 constexpr context_opt_t::SuboptimalAlg context_opt_t::SUBOPTIMAL_ALGS[];
+constexpr context_opt_t::PartitionAlg context_opt_t::PARTITION_ALGS[];
 
 context_opt_t ContextOptionsFromArgParse(const ArgParse& argparse) {
   context_opt_t options;
@@ -52,6 +53,8 @@ context_opt_t ContextOptionsFromArgParse(const ArgParse& argparse) {
   const auto part_alg = argparse.GetOption("part-alg");
   if (part_alg == "0") {
     options.partition_alg = context_opt_t::PartitionAlg::ZERO;
+  } else if (part_alg == "1") {
+    options.partition_alg = context_opt_t::PartitionAlg::ONE;
   } else if (part_alg == "brute") {
     options.partition_alg = context_opt_t::PartitionAlg::BRUTE;
   } else {
@@ -126,6 +129,9 @@ partition::partition_t Context::Partition() {
   switch (options.partition_alg) {
     case context_opt_t::PartitionAlg::ZERO:
       partition::internal::Partition0();
+      break;
+    case context_opt_t::PartitionAlg::ONE:
+      partition::internal::Partition1();
       break;
     case context_opt_t::PartitionAlg::BRUTE:
       return fold::PartitionBruteForce(r, *em).first;

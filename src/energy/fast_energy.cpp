@@ -88,22 +88,7 @@ precomp_t PrecomputeData(const primary_t& r, const energy::EnergyModel& em) {
       std::min(em.bulge_special_c, 0) + states_bonus;
   pc.min_twoloop_not_stack = std::min(min_bulge, min_internal);
 
-  pc.hairpin.resize(r.size());
-  std::string rna_str = parsing::PrimaryToString(r);
-  for (const auto& hairpinpair : em.hairpin) {
-    const auto& str = hairpinpair.first;
-    verify_expr(str.size() - 2 <= hairpin_precomp_t::MAX_SPECIAL_HAIRPIN_SZ,
-        "need to increase MAX_SPECIAL_HAIRPIN_SZ");
-    auto pos = rna_str.find(str, 0);
-    while (pos != std::string::npos) {
-      pc.hairpin[pos].special[str.size() - 2] = hairpinpair.second;
-      pos = rna_str.find(str, pos + 1);
-    }
-  }
-  const int N = int(r.size());
-  pc.hairpin[N - 1].num_c = int(r[N - 1] == C);
-  for (int i = N - 2; i >= 0; --i)
-    if (r[i] == C) pc.hairpin[i].num_c = pc.hairpin[i + 1].num_c + 1;
+  pc.hairpin = PrecomputeHairpin<hairpin_precomp_t<energy_t, MAX_E>>(r, em);
 
   return pc;
 }
@@ -146,7 +131,7 @@ energy_t FastTwoLoop(int ost, int oen, int ist, int ien) {
 energy_t FastHairpin(int st, int en) {
   int length = en - st - 1;
   assert(length >= HAIRPIN_MIN_SZ);
-  if (length <= hairpin_precomp_t::MAX_SPECIAL_HAIRPIN_SZ &&
+  if (length <= MAX_SPECIAL_HAIRPIN_SZ &&
       gpc.hairpin[st].special[length] != MAX_E)
     return gpc.hairpin[st].special[length];
   base_t stb = gr[st], st1b = gr[st + 1], en1b = gr[en - 1], enb = gr[en];

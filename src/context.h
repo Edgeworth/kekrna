@@ -37,13 +37,13 @@ struct context_opt_t {
   };
 
   enum class PartitionAlg {
-    ZERO, BRUTE
+    ZERO, ONE, BRUTE
   };
 
   static constexpr TableAlg TABLE_ALGS[] = {
       TableAlg::ZERO, TableAlg::ONE, TableAlg::TWO, TableAlg::THREE};
   static constexpr SuboptimalAlg SUBOPTIMAL_ALGS[] = {SuboptimalAlg::ZERO, SuboptimalAlg::ONE};
-  static constexpr PartitionAlg PARTITION_ALGS[] = {PartitionAlg::ZERO};
+  static constexpr PartitionAlg PARTITION_ALGS[] = {PartitionAlg::ZERO, PartitionAlg::ONE};
 
   context_opt_t(
       TableAlg table_alg_ = TableAlg::ZERO,
@@ -90,7 +90,7 @@ private:
 const std::map<std::string, opt_t> CONTEXT_OPTIONS = {
     {"dp-alg", opt_t("which algorithm for mfe folding").Arg("2", {"0", "1", "2", "3", "brute"})},
     {"subopt-alg", opt_t("which algorithm for suboptimal folding").Arg("1", {"0", "1", "brute"})},
-    {"part-alg", opt_t("which algorithm for the partition function").Arg("0", {"0", "brute"})}
+    {"part-alg", opt_t("which algorithm for the partition function").Arg("1", {"0", "1", "brute"})}
 };
 
 context_opt_t ContextOptionsFromArgParse(const ArgParse& argparse);

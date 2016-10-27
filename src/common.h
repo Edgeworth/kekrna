@@ -54,7 +54,7 @@ typedef boost::multiprecision::mpfr_float_1000 penergy_t;
 const penergy_t EP{1e-30};
 #else
 typedef double penergy_t;
-const penergy_t EP{1e-5};
+const penergy_t EP{1e-3};
 #endif
 
 enum Ctd : int8_t {

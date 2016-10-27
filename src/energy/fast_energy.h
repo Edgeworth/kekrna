@@ -17,6 +17,7 @@
 
 #include "common.h"
 #include "globals.h"
+#include "parsing.h"
 #include "energy/energy_model.h"
 
 namespace kekrna {
@@ -28,11 +29,16 @@ int MaxNumContiguous(const primary_t& r);
 
 }
 
-struct hairpin_precomp_t {
-  static const int MAX_SPECIAL_HAIRPIN_SZ = 6;
-  hairpin_precomp_t() : num_c(0) { memset(special, MAX_E & 0xFF, sizeof(special)); }
+const int MAX_SPECIAL_HAIRPIN_SZ = 6;
 
-  energy_t special[MAX_SPECIAL_HAIRPIN_SZ + 1];
+// This is templated because the partition function wants to use it with a different type.
+template<typename T, int InitVal>
+struct hairpin_precomp_t {
+  hairpin_precomp_t() : num_c(0) {
+    std::fill(special, special + sizeof(special) / sizeof(special[0]), InitVal);
+  }
+
+  T special[MAX_SPECIAL_HAIRPIN_SZ + 1];
   int num_c;
 };
 
@@ -42,8 +48,31 @@ struct precomp_t {
   energy_t min_flush_coax;
   energy_t min_twoloop_not_stack;
 
-  std::vector<hairpin_precomp_t> hairpin;
+  std::vector<hairpin_precomp_t<energy_t, MAX_E>> hairpin;
 };
+
+
+template<typename HairpinPrecomp, typename EM>
+std::vector<HairpinPrecomp> PrecomputeHairpin(const primary_t& r, const EM& em) {
+  std::vector<HairpinPrecomp> pc;
+  pc.resize(r.size());
+  std::string rna_str = parsing::PrimaryToString(r);
+  for (const auto& hairpinpair : em.hairpin) {
+    const auto& str = hairpinpair.first;
+    verify_expr(str.size() - 2 <= MAX_SPECIAL_HAIRPIN_SZ,
+        "need to increase MAX_SPECIAL_HAIRPIN_SZ");
+    auto pos = rna_str.find(str, 0);
+    while (pos != std::string::npos) {
+      pc[pos].special[str.size() - 2] = hairpinpair.second;
+      pos = rna_str.find(str, pos + 1);
+    }
+  }
+  const int N = int(r.size());
+  pc[N - 1].num_c = int(r[N - 1] == C);
+  for (int i = N - 2; i >= 0; --i)
+    if (r[i] == C) pc[i].num_c = pc[i + 1].num_c + 1;
+  return pc;
+}
 
 precomp_t PrecomputeData(const primary_t& r, const EnergyModel& em);
 

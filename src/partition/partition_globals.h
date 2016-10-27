@@ -25,6 +25,7 @@ namespace internal {
 
 extern array3d_t<penergy_t, PT_SIZE> gpt;
 extern array2d_t<penergy_t, PTEXT_SIZE> gptext;
+extern precomp_t gppc;
 
 }
 

@@ -46,23 +46,6 @@ int main(int argc, char* argv[]) {
   const auto cutoff = atof(argparse.GetOption("cutoff").c_str());
   const bridge::Rnastructure rnastructure("extern/miles_rnastructure/data_tables/", false);
 
-  PrintPartition(rnastructure.Partition(primary).first, "RNAstructure");
-  PrintPartition(fold::PartitionBruteForce(primary, *em).first, "Brute force");
-
   Context ctx(parsing::StringToPrimary(pos.front()), em, ContextOptionsFromArgParse(argparse));
   PrintPartition(ctx.Partition(), "kekrna");
-
-//  std::vector<std::tuple<double, int, int>> pairs;
-//  for (int i = 0; i < int(primary.size()); ++i) {
-//    for (int j = 0; j < int(primary.size()); ++j)
-//      if (probs[i][j][0] >= cutoff)
-//        pairs.emplace_back(probs[i][j][0], i, j);
-//  }
-//  std::sort(pairs.rbegin(), pairs.rend());
-//  for (const auto& pair : pairs) {
-//    int st, en;
-//    double prob;
-//    std::tie(prob, st, en) = pair;
-//    printf("%d %d: %.4lf %.4lf\n", st, en, prob, -log10(prob));
-//  }
 }

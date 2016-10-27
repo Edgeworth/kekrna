@@ -403,31 +403,54 @@ private:
 
   error_t CheckPartition() {
     error_t errors;
-    context_opt_t options(
-        context_opt_t::TableAlg::TWO,
-        context_opt_t::SuboptimalAlg::ONE,
-        context_opt_t::PartitionAlg::ZERO);
-    Context ctx(r, em, options);
-    auto kekrna_partition = ctx.Partition();
+    std::vector<partition::partition_t> kekrna_partitions;
+    for (auto partition_alg : context_opt_t::PARTITION_ALGS) {
+      Context ctx(r, em, context_opt_t(context_opt_t::TableAlg::TWO,
+          context_opt_t::SuboptimalAlg::ONE, partition_alg));
+      kekrna_partitions.emplace_back(ctx.Partition());
+    }
 
-    if (cfg.partition_rnastructure) {
-      auto rnastructure_part = rnastructure.Partition(r);
-      // Types for the partition function are meant to be a bit configurable, so use sstream here.
-      if (!equ(rnastructure_part.first.q, kekrna_partition.q)) {
+    for (int i = 0; i < int(kekrna_partitions.size()); ++i) {
+      if (!equ(kekrna_partitions[i].q, kekrna_partitions[0].q)) {
         std::stringstream sstream;
-        sstream << "q: rnastructure partition " << rnastructure_part.first.q
-            << " != kekrna " << kekrna_partition.q << "; difference: "
-            << rnastructure_part.first.q - kekrna_partition.q;
+        sstream << "q: kekrna partition " << i << ": " << kekrna_partitions[i].q
+            << " != " << kekrna_partitions[0].q << "; difference: "
+            << kekrna_partitions[i].q - kekrna_partitions[0].q;
         errors.push_back(sstream.str());
       }
 
       for (int st = 0; st < N; ++st) {
         for (int en = 0; en < N; ++en) {
-          if (!equ(rnastructure_part.first.p[st][en][0], kekrna_partition.p[st][en][0])) {
+          if (!equ(kekrna_partitions[i].p[st][en][0], kekrna_partitions[0].p[st][en][0])) {
             std::stringstream sstream;
-            sstream << "kekrna " << st << " " << en << ": " << kekrna_partition.p[st][en][0]
+            sstream << "kekrna " << i << " at " << st << " " << en << ": "
+                << kekrna_partitions[i].p[st][en][0] << " != " << kekrna_partitions[0].p[st][en][0]
+                << "; difference: "
+                << kekrna_partitions[i].p[st][en][0] - kekrna_partitions[0].p[st][en][0];
+            errors.push_back(sstream.str());
+          }
+        }
+      }
+    }
+
+    if (cfg.partition_rnastructure) {
+      auto rnastructure_part = rnastructure.Partition(r);
+      // Types for the partition function are meant to be a bit configurable, so use sstream here.
+      if (!equ(rnastructure_part.first.q, kekrna_partitions[0].q)) {
+        std::stringstream sstream;
+        sstream << "q: rnastructure partition " << rnastructure_part.first.q
+            << " != kekrna " << kekrna_partitions[0].q << "; difference: "
+            << rnastructure_part.first.q - kekrna_partitions[0].q;
+        errors.push_back(sstream.str());
+      }
+
+      for (int st = 0; st < N; ++st) {
+        for (int en = 0; en < N; ++en) {
+          if (!equ(rnastructure_part.first.p[st][en][0], kekrna_partitions[0].p[st][en][0])) {
+            std::stringstream sstream;
+            sstream << "kekrna " << st << " " << en << ": " << kekrna_partitions[0].p[st][en][0]
                 << " != rnastructure " << rnastructure_part.first.p[st][en][0] << "; difference: "
-                << rnastructure_part.first.p[st][en][0] - kekrna_partition.p[st][en][0];
+                << rnastructure_part.first.p[st][en][0] - kekrna_partitions[0].p[st][en][0];
             errors.push_back(sstream.str());
           }
         }
