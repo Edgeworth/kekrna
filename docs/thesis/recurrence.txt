@@ -1,0 +1,211 @@
+// Basic:
+// Note that all indices [st, en] are *inclusive*
+MinHairpinSize = 3
+
+AuGu(st, en) = the AU/GU penalty if the pair (st, en) is AU/GU, otherwise 0
+ViablePair(st, en) = true if (st, en) can pair and is not a lonely pair
+
+// Finds the best exterior loop that starts at or after st.
+Ext(N) = 0
+Ext(st) = min(
+  Ext(st + 1),
+  min(Paired(st, en) + AuGu(st, en) + Ext(en + 1) for st < en < N)
+)
+
+// Finds the best two loop with the outer base pair (st, en).
+TwoLoop(st, en) = min for st < ist < ien < en and 0 < ist - st - 1 + en - ien - 1 <= 30 (
+  TwoLoopEnergy(st, en, ist, ien) + Paired(ist, ien) 
+)
+
+// Finds the best structure given that st and en are paired.
+Paired(st, en) = 
+    infinity when en - st + 1 < MinHairpinSize + 2 || !ViablePair(st, en)
+Paired(st, en) = min(
+  Hairpin(st, en),
+  StackingEnergy(st, en, st + 1, en - 1) + Paired(st + 1, en - 1),
+  TwoLoop(st, en),
+  Unpaired2(st + 1, en - 1) + AuGu(st, en) + BranchCost + Initiation  // A multi-loop must contain at least two branches.
+)
+
+
+// Finds the best structure with at least one branch,
+// where st and en do not have to be paired.
+// Assumed to be inside a multi-loop. 
+Unpaired(x, x) = infinity  // Must contain at least one branch.
+Unpaired(st, en) = min(
+  Paired(st, en) + BranchCost,  // Try pairing at [st, en]
+  Unpaired(st + 1, en),  // Assume st is not paired
+  min for st < piv < en (  // Assume st is paired.
+    Paired(st, piv) + AuGu(st, piv) + BranchCost + min(Unpaired(piv + 1, en), 0)
+  )
+)
+
+// Finds the best structure with at least two branches,
+// where st and en do not have to be paired.
+// Assumed to be inside a multi-loop.
+// This extra function is needed to make sure Paired() is canonical.
+Unpaired2(x, x) = infinity // Must contain at least two branches.
+Unpaired2(st, en) = min(
+  Unpaired2(st + 1, en),  // Assume st is not paired
+  min for st < piv < en (   // Assume st is paired.
+    Paired(st, piv) + AuGu(st, piv) + BranchCost + Unpaired(piv + 1, en)
+  ) 
+)
+
+MFE() = Ext(0)
+
+
+// Coaxial stacking:
+WC(b) = {A : U, U : A, G : C, C : G}[b]
+GU(b) = {G : U, U : G}[b]
+
+Dangle3Energy()
+Dangle5Energy()
+MismatchEnergy()
+MismatchCoaxEnergy()
+StackingBaseEnergy()
+
+Ext(N) = 0
+Ext(st) = min(
+  Ext(st + 1),
+  min for st < en < N (
+    // No CTDs - (   )<   >
+    Paired(st, en) + AuGu(st, en) + Ext(en + 1), 
+    // 3' dangle - (   )3<   > 3'
+    Paired(st, en - 1) + AuGu(st, en - 1) + Dangle3Energy(en - 1, en, st) + Ext(en + 1),
+    // 5' dangle - 5(   )<   > 5'
+    Paired(st + 1, en) + AuGu(st + 1, en) + Dangle5Energy(en, st, st + 1) + Ext(en + 1),
+    // Terminal mismatch - .(   ).<   >
+    Paired(st + 1, en - 1) + AuGu(st + 1, en - 1) + MismatchEnergy(en - 1, en, st, st + 1) + Ext(en + 1),
+    // Left coaxial stack - Watson-Crick - .(   ).<(   ) >
+    Paired(st + 1, en - 1) + AuGu(st + 1, en - 1) + MismatchCoaxEnergy(en - 1, en, st, st + 1) + ExtWC(en + 1),
+    // Left coaxial stack - GU - .(   ).<(   ) >
+    Paired(st + 1, en - 1) + AuGu(st + 1, en - 1) + MismatchCoaxEnergy(en - 1, en, st, st + 1 + ExtGU(en + 1),
+    // Right coaxial stack forward - (   ).<(   ). >
+    Paired(st, en - 1) + AuGu(st, en - 1) + ExtRightCoax(en + 1),
+    if en < N - 1 {
+      // Flush coaxial stack - Watson-Crick - (   )<(   ) >
+      Paired(st, en) + AuGu(st, en) + StackingBaseEnergy(r[en], r[st], r[en + 1], WC(r[en + 1])) + ExtWC(en + 1),
+      // Flush coaxial stack - GU - (   )<(   ) >
+      if r[en + 1] is G or U
+        Paired(st, en) + AuGu(st, en) + StackingBaseEnergy(r[en], r[st], r[en + 1], GU(r[en + 1])) + ExtGU(en + 1)
+    }
+  )
+)
+
+ExtWC(N) = infinity
+ExtWC(st) = 
+    Paired(st, en) + AuGu(st, en) + Ext(en + 1) if (st, en) is Watson-Crick
+    infinity otherwise
+
+ExtGU(N) = infinity
+ExtGU(st) = 
+    Paired(st, en) + AuGu(st, en) + Ext(en + 1) if (st, en) is GU/UG
+    infinity otherwise
+
+ExtRightCoax(N) = infinity
+// (   ).<( * ). > Right coax backward
+ExtRightCoax(st) =
+    Paired(st, en - 1) + AuGu(st, en - 1) + 
+        MismatchCoaxEnergy(en - 1, en, st - 1, st) + Ext(en + 1) if st > 0
+    infinity otherwise
+
+// Finds the best structure given that st and en are paired.
+Paired(st, en) = 
+    infinity when en - st + 1 < MinHairpinSize + 2 || !ViablePair(st, en)
+Paired(st, en) = min(
+  Hairpin(st, en),
+  StackingEnergy(st, en, st + 1, en - 1) + Paired(st + 1, en - 1),
+  TwoLoop(st, en),
+  set BaseCost = AuGu(st, en) + BranchCost + Initiation
+  // (<   ><   >)
+  BaseCost + Unpaired2(st + 1, en - 1),
+  // 3' dangle - (3<   ><   >) 
+  BaseCost + Unpaired2(st + 2, en - 1) + Dangle3Energy(st, st + 1, en),
+  // 5' dangle - (<   ><   >5) 
+  BaseCost + Unpaired2(st + 1, en - 2) + Dangle5Energy(st, en - 1, en),
+  // Terminal mismatch - (.<   ><   >.) 
+  BaseCost + Unpaired2(st + 2, en - 2) + MismatchEnergy(st, st + 1, en - 1, en),
+  min for st < piv < en (
+    // Left outer coax - (.(   )   .)
+    BaseCost + Paired(st + 2, piv) + BranchCost + AuGu(st + 2, piv) + Unpaired(piv + 1, en - 2) + MismatchCoaxEnergy(st, st + 1, en - 1, en),
+    // Right outer coax - (.   (   ).)
+    BaseCost + Unpaired(st + 2, piv) + BranchCost + AuGu(piv, en - 2) + Paired(piv + 1, en - 2) + MismatchCoaxEnergy(st, st + 1, en - 1, en),
+    // Left right coax - (.(   ).   )
+    BaseCost + Paired(st + 2, piv - 1) + BranchCost + AuGu(st + 2, piv - 1) + Unpaired(piv + 1, en - 1) + MismatchCoaxEnergy(piv - 1, piv, st + 1, st + 2),
+    // Right left coax - (   .(   ).)
+    BaseCost + Unpaired(st + 1, piv) + BranchCost + AuGu(piv + 2, en - 2) + Paired(piv + 2, en - 2) + MismatchCoaxEnergy(en - 2, en - 1, piv + 1, piv + 2),
+    // Left flush coax - ((   )   ) 
+    BaseCost + Paired(st + 1, piv) + BranchCost + AuGu(st + 1, piv) + Unpaired(piv + 1, en - 1) + StackingEnergy(st, en, st + 1, piv),
+    // Right flush coax - (   (   )) 
+    BaseCost + Unpaired(st + 1, piv) + BranchCost + AuGu(piv + 1, en - 1) + Paired(piv + 1, en - 1) + StackingEnergy(st, en, piv + 1, en - 1),
+  )
+)
+
+Unpaired(x, x) = infinity
+Unpaired(st, en) = min(
+  Unpaired(st + 1, en),  // Assume st is not paired
+  min for st < piv <= en (  // Assume st is paired. Note there is a <= en now, not a <.
+    // No ctds (   )<   >
+    Paired(st, piv) + AuGu(st, piv) + BranchCost + min(Unpaired(piv + 1, en), 0),
+    // 3' dangle - (   )3<   > 
+    Paired(st, piv - 1) + AuGu(st, piv - 1) + BranchCost + Dangle3Energy(piv - 1, piv, st) + min(Unpaired(piv + 1, en), 0),
+    // 5' dangle - 5(   )<   > 
+    Paired(st + 1, piv) + AuGu(st + 1, piv) + BranchCost + Dangle5Energy(piv, st, st + 1) + min(Unpaired(piv + 1, en), 0),
+    // Terminal mismatch - .(   ).<   >
+    Paired(st + 1, piv - 1) + AuGu(st + 1, piv - 1) + BranchCost + MismatchEnergy(piv - 1, piv, st, st + 1) + min(Unpaired(piv + 1, en), 0),
+    // Left coax - .(   ).<(   ) >
+    Paired(st + 1, piv - 1) + AuGu(st + 1, piv - 1) + BranchCost + MismatchCoaxEnergy(piv - 1, piv, st, st + 1) + min(UnpairedWC(piv + 1, en), UnpairedGU(piv + 1, en)),
+    // Right coax forward - (   ).<(   ). >
+    Paired(st, piv - 1) + AuGu(st, piv - 1) + BranchCost + UnpairedRightCoax(piv + 1, en),
+    if piv < en {
+      // Flush coax - Watson-Crick - (   )<(   ) > 
+      Paired(st, piv) + AuGu(st, piv) + BranchCost + StackingEnergy(r[piv], r[st], r[piv + 1], WC(r[piv + 1])) + UnpairedWC(piv + 1, en),
+      // Flush coax - GU - (   )<(   ) > 
+      if r[piv + 1] is G or U 
+        Paired(st, piv) + AuGu(st, piv) + BranchCost + StackingEnergy(r[piv], r[st], r[piv + 1], GU(r[piv + 1])) + UnpairedGU(piv + 1, en)
+    }
+  )
+)
+
+// This is mostly the same as the above - the min(Unpaired, 0) turns into just Unpaired(), because we need at least two branches.
+Unpaired2(x, x) = infinity
+Unpaired2(st, en) = min(
+  Unpaired2(st + 1, en),  // Assume st is not paired
+  min for st < piv <= en (  // Assume st is paired. Note there is a <= en now, not a <.
+    // No ctds (   )<   >
+    Paired(st, piv) + AuGu(st, piv) + BranchCost + Unpaired(piv + 1, en),
+    // 3' dangle - (   )3<   > 
+    Paired(st, piv - 1) + AuGu(st, piv - 1) + BranchCost + Dangle3Energy(piv - 1, piv, st) + Unpaired(piv + 1, en),
+    // 5' dangle - 5(   )<   > 
+    Paired(st + 1, piv) + AuGu(st + 1, piv) + BranchCost + Dangle5Energy(piv, st, st + 1) + Unpaired(piv + 1, en),
+    // Terminal mismatch - .(   ).<   >
+    Paired(st + 1, piv - 1) + AuGu(st + 1, piv - 1) + BranchCost + MismatchEnergy(piv - 1, piv, st, st + 1) + Unpaired(piv + 1, en),
+    // Left coax - .(   ).<(   ) >
+    Paired(st + 1, piv - 1) + AuGu(st + 1, piv - 1) + BranchCost + MismatchCoaxEnergy(piv - 1, piv, st, st + 1) + min(UnpairedWC(piv + 1, en), UnpairedGU(piv + 1, en)),
+    // Right coax forward - (   ).<(   ). >
+    Paired(st, piv - 1) + AuGu(st, piv - 1) + BranchCost + UnpairedRightCoax(piv + 1, en),
+    if piv < en {
+      // Flush coax - Watson-Crick - (   )<(   ) > 
+      Paired(st, piv) + AuGu(st, piv) + BranchCost + StackingEnergy(r[piv], r[st], r[piv + 1], WC(r[piv + 1])) + UnpairedWC(piv + 1, en),
+      // Flush coax - GU - (   )<(   ) > 
+      if r[piv + 1] is G or U 
+        Paired(st, piv) + AuGu(st, piv) + BranchCost + StackingEnergy(r[piv], r[st], r[piv + 1], GU(r[piv + 1])) + UnpairedGU(piv + 1, en)
+    }
+  )
+)
+
+UnpairedWC(st, en) = 
+  Paired(st, piv) + AuGu(st, piv) + BranchCost + min(Unpaired(piv + 1, en), 0) if (st, en) is Watson-Crick
+  infinity otherwise
+
+UnpairedGU(st, en) = 
+  Paired(st, piv) + AuGu(st, piv) + BranchCost + min(Unpaired(piv + 1, en), 0) if (st, en) is GU/UG
+  infinity otherwise
+
+UnpairedRightCoax(st, en) = 
+  // Right coax backward (   ).<( * ). >
+  Paired(st, piv - 1) + AuGu(st, piv - 1) + BranchCost + MismatchCoaxEnergy(piv - 1, piv, st - 1, st) + min(Unpaired(piv + 1, en), 0)  if st > 0
+  infinity otherwise
+
+MFE() = Ext(0)
